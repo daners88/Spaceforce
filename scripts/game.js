@@ -1,17 +1,17 @@
 (function ($) {
 var canvas = document.getElementById('myCanvas');
 var context = canvas.getContext('2d');
-var spawnPoint= {x:canvas.width/2,y:canvas.height/2};
+var spawnPoint= {x:canvas.width/2,y:canvas.height/2 - 19};
 
 //var playerName;
 var lastTimeAlienSpawned = 0;
 var lastFrameTimeMs = 0;
 var timeTotalMs = 0;
-var player, background, assetLoader, KEY_CODES, KEY_STATUS;
+var player, cage, background, assetLoader, KEY_CODES, KEY_STATUS;
 var bricks = [], aliens = [];
 var brickL = 38;
 var brickH = 19;
-var topSide = 50, bottomSide = 500, rightSide = 850, leftSide = 110;
+var topSide = 50, bottomSide = 500, rightSide = 845, leftSide = 88, leftLimiter = 110, topLimiter = 65;
 
 var canUseLocalStorage = 'localStorage' in window && window.localStorage !== null;
 
@@ -91,7 +91,7 @@ Vector.prototype.advance = function() {
       }
       else
       {
-        this.dy = this.dx * -1;
+        this.dy = -this.dx;
         this.dx = 0;
       }
     }
@@ -111,7 +111,7 @@ Vector.prototype.advance = function() {
       this.x = leftSide;
       if(this.clockwise)
       {
-        this.dy = this.dx * -1;
+        this.dy = -this.dx;
         this.dx = 0;
       }
       else
@@ -137,7 +137,7 @@ Vector.prototype.advance = function() {
       this.y = bottomSide;
       if(this.clockwise)
       {
-        this.dx = this.dy * -1;
+        this.dx = -this.dy;
         this.dy = 0;
       }
       else
@@ -167,7 +167,7 @@ Vector.prototype.advance = function() {
       }
       else
       {
-        this.dx = this.dy * -1;
+        this.dx = -this.dy;
         this.dy = 0;
       }
     }
@@ -176,6 +176,45 @@ Vector.prototype.advance = function() {
       if(!this.isJumping)
       {
         this.y = topSide;
+      }
+    }
+  }
+  if(this.type == 'mc')
+  {
+    if(this.x < leftLimiter && (this.onTop || this.onBottom))
+    {
+
+      if(!this.isJumping)
+      {
+        this.x = leftLimiter;
+      }
+    }
+    else if(this.y < topLimiter && (this.onRight || this.onLeft))
+    {
+
+      if(!this.isJumping)
+      {
+        this.y = topLimiter;
+      }
+    }
+    if(this.x > leftSide && this.x < rightSide && this.y > topSide && this.y < bottomSide)
+    {
+      var topDiff = this.y - topSide, bottomDiff = bottomSide - this.y, rightDiff = rightSide - this.x, leftDiff = this.x - leftSide;
+      if(topDiff <= bottomDiff && topDiff <= rightDiff && topDiff <= leftDiff)
+      {
+        this.y = topSide;
+      }
+      else if(bottomDiff <= topSide && bottomDiff <= rightDiff && bottomDiff <= leftDiff)
+      {
+        this.y = bottomSide;
+      }
+      else if(rightDiff <= leftDiff && rightDiff <= topDiff && rightDiff <= bottomDiff)
+      {
+        this.x = rightSide;
+      }
+      else if(leftDiff <= rightDiff && leftDiff <= topDiff && leftDiff <= bottomDiff)
+      {
+        this.x = leftSide;
       }
     }
   }
@@ -234,7 +273,7 @@ function getRandomOppositeDirection(num)
   {
     multiplier = -1;
   }
-  var newNum = rand(1, 3)*multiplier;
+  var newNum = rand(1, 2) * multiplier;
   return newNum;
 }
 
@@ -267,12 +306,25 @@ function updateAliens() {
     for(var j = 0; j < bricks.length; j++){
       if(aliens[i].minDist(bricks[j]) <= aliens[i].width - brickH/2)
       {
-        aliens[i].dy = getRandomOppositeDirection(aliens[i].dy);
-        aliens[i].dx = getRandomOppositeDirection(aliens[i].dx);
-        while(aliens[i].dy == 0 && aliens[i].dx == 0)
+        if(bricks[j].type == 'lBrickV')
         {
           aliens[i].dy = getRandomOppositeDirection(aliens[i].dy);
+          aliens[i].dx = aliens[i].dx > 0 ? aliens[i].dx : -aliens[i].dx;
+        }
+        else if(bricks[j].type == 'rBrickV')
+        {
+          aliens[i].dy = getRandomOppositeDirection(aliens[i].dy);
+          aliens[i].dx = aliens[i].dx > 0 ? -aliens[i].dx : aliens[i].dx;
+        }
+        else if(bricks[j].type == 'tBrickH')
+        {
           aliens[i].dx = getRandomOppositeDirection(aliens[i].dx);
+          aliens[i].dy = aliens[i].dy > 0 ? -aliens[i].dy : aliens[i].dy;
+        }
+        else if(bricks[j].type == 'bBrickH')
+        {
+          aliens[i].dx = getRandomOppositeDirection(aliens[i].dx);
+          aliens[i].dy = aliens[i].dy > 0 ? aliens[i].dy : -aliens[i].dy;
         }
       }
     }
@@ -305,8 +357,8 @@ function spawnBrickSprites() {
   var bx = 810;
   for(var i = 0; i < 18; i++)
   {
-    bricks.push(new Sprite(x, y, brickL, brickH, 'brickH'));
-    bricks.push(new Sprite(bx, by, brickL, brickH, 'brickH'));
+    bricks.push(new Sprite(x, y, brickL, brickH, 'tBrickH'));
+    bricks.push(new Sprite(bx, by, brickL, brickH, 'bBrickH'));
     x = x - brickL;
     bx = bx - brickL;
   }
@@ -316,8 +368,8 @@ function spawnBrickSprites() {
   by =448;
   for(var i = 0; i < 10; i++)
   {
-    bricks.push(new Sprite(x, y, brickH, brickL, 'brickV'));
-    bricks.push(new Sprite(bx, by, brickH, brickL, 'brickV'));
+    bricks.push(new Sprite(x, y, brickH, brickL, 'rBrickV'));
+    bricks.push(new Sprite(bx, by, brickH, brickL, 'lBrickV'));
     y = y - brickL;
     by = by - brickL;
   }
@@ -334,6 +386,8 @@ function update(elapsedTime){
   updatePlayer();
   updateBricks();
   updateAliens();
+  cage.update();
+  cage.draw();
 }
 
 function gameloop(timestamp) {
@@ -418,18 +472,53 @@ function makeAlien(type) {
 };
 makeAlien.prototype = Object.create(Vector.prototype);
 
+function Cage() {
+  this.width  = 64;
+  this.height = 64;
+  this.sheet  = new SpriteSheet("images/spritesheets/cage.png", this.width, this.height);
+  this.anim  = new Animation(this.sheet, 5, 0, 3);
+
+  this.dy        = 0;
+  this.dx        = 0;
+
+  Vector.call(this, 0, 0, this.dx, this.dy);
+
+  this.update = function() {
+
+    this.advance();
+
+    this.anim.update();
+  };
+
+  this.draw = function() {
+    this.anim.draw(this.x, this.y);
+  };
+
+  this.reset = function() {
+    this.x = spawnPoint.x - 15;
+    this.y = spawnPoint.y - 15;
+  };
+};
+Cage.prototype = Object.create(Vector.prototype);
+
 function initialize() {
   assetLoader = (function() {
     this.imgs        = {
         "bg"            : "images/background.png",
         "bgss"            : "images/spritesheets/backgroundSprites.png",
-        "mc"           : "images/spritesheets/mc.png",
-        "mcflip"           : "images/spritesheets/mcflip.png",
+        "mcTop"           : "images/spritesheets/mcTside.png",
+        "mcTflip"           : "images/spritesheets/mcTflip.png",
+        "mcBottom"           : "images/spritesheets/mcBside.png",
+        "mcRight"         : "images/spritesheets/mcRSide.png",
+        "mcLeft"         : "images/spritesheets/mcLSide.png",
         "greenAlien"      : "images/spritesheets/alien1.png",
         "redAlien"         : "images/spritesheets/alien2.png",
         "blueAlien" : "images/spritesheets/alien3.png",
-        'brickH'         : 'images/BrickH.png',
-        'brickV'         : 'images/BrickV.png'
+        'tBrickH'         : 'images/tBrickH.png',
+        'bBrickH'         : 'images/bBrickH.png',
+        'lBrickV'         : 'images/lBrickV.png',
+        'rBrickV'         : 'images/rBrickV.png',
+        'cage'          : 'images/spritesheets/cage.png'
       };
 
     this.sounds      = {
@@ -531,8 +620,14 @@ function initialize() {
     player.type = 'mc';
     player.width  = 32;
     player.height = 64;
-    player.sheet  = new SpriteSheet("images/spritesheets/mc.png", player.width, player.height);
-    player.flipsheet = new SpriteSheet("images/spritesheets/mcflip.png", player.width, player.height);
+    player.topSheet  = new SpriteSheet("images/spritesheets/mcTside.png", player.width, player.height);
+    player.topFlipSheet = new SpriteSheet("images/spritesheets/mcTflip.png", player.width, player.height);
+    player.bottomSheet  = new SpriteSheet("images/spritesheets/mcBside.png", player.width, player.height);
+    player.bottomFlipSheet  = new SpriteSheet("images/spritesheets/mcBflip.png", player.width, player.height);
+    player.rightSheet = new SpriteSheet("images/spritesheets/mcRside.png", player.height, player.width);
+    player.rightFlipSheet = new SpriteSheet("images/spritesheets/mcRflip.png", player.height, player.width);
+    player.leftSheet = new SpriteSheet("images/spritesheets/mcLside.png", player.height, player.width);
+    player.leftFlipSheet = new SpriteSheet("images/spritesheets/mcLflip.png", player.height, player.width);
     player.lastWalkLeft = true;
     player.onTop = true;
     player.onLeft = false;
@@ -547,10 +642,22 @@ function initialize() {
     player.isFalling = false;
     player.isJumping = false;
 
-    player.walkAnim  = new Animation(player.sheet, 5, 0, 3);
-    player.flipWalkAnim = new Animation(player.flipsheet, 5, 0, 3);
-    player.standAnim = new Animation(player.sheet, 1, 0, 0);
-    player.flipStandAnim = new Animation(player.flipsheet, 1, 0, 0);
+    player.topWalkAnim  = new Animation(player.topSheet, 5, 0, 3);
+    player.topFlipWalkAnim = new Animation(player.topFlipSheet, 5, 0, 3);
+    player.topStandAnim = new Animation(player.topSheet, 1, 0, 0);
+    player.topFlipStandAnim = new Animation(player.topFlipSheet, 1, 0, 0);
+    player.bottomWalkAnim  = new Animation(player.bottomSheet, 5, 0, 3);
+    player.bottomFlipWalkAnim  = new Animation(player.bottomFlipSheet, 5, 0, 3);
+    player.bottomStandAnim = new Animation(player.bottomSheet, 1, 0, 0);
+    player.bottomFlipStandAnim = new Animation(player.bottomFlipSheet, 1, 0, 0);
+    player.rightWalkAnim = new Animation(player.rightSheet, 5, 0, 3);
+    player.rightFlipWalkAnim = new Animation(player.rightFlipSheet, 5, 0, 3);
+    player.rightStandAnim = new Animation(player.rightSheet, 1, 0, 0);
+    player.rightFlipStandAnim = new Animation(player.rightFlipSheet, 1, 0, 0);
+    player.leftWalkAnim = new Animation(player.leftSheet, 5, 0, 3);
+    player.leftFlipWalkAnim = new Animation(player.leftFlipSheet, 5, 0, 3);
+    player.leftStandAnim = new Animation(player.leftSheet, 1, 0, 0);
+    player.leftFlipStandAnim = new Animation(player.leftFlipSheet, 1, 0, 0);
 
     Vector.call(player, 0, 0, player.dx, player.dy);
 
@@ -583,72 +690,92 @@ function initialize() {
         document.location.href = 'index.html';
       }
 
-      if (KEY_STATUS.right && (player.y <= topSide|| player.y >= bottomSide))
+      if (KEY_STATUS.right && (player.y <= topLimiter|| player.y >= bottomSide))
       {
         player.onLeft = false;
         player.onRight = false;
-        if(player.y <= topSide)
+        if(player.y <= topLimiter)
         {
           player.onTop = true;
+          if(!player.isJumping)
+          {
+            player.y = topSide;
+          }
           player.onBottom = false;
+          player.anim      = player.topFlipWalkAnim;
         }
         else {
           player.onTop = false;
           player.onBottom = true;
+          player.anim      = player.bottomWalkAnim;
         }
         player.dx = player.speed;
-        player.anim      = player.flipWalkAnim;
         player.lastWalkLeft = false;
       }
-      else if(KEY_STATUS.left && (player.y <= topSide|| player.y >= bottomSide))
+      else if(KEY_STATUS.left && (player.y <= topLimiter|| player.y >= bottomSide))
       {
         player.onLeft = false;
         player.onRight = false;
-        if(player.y <= topSide)
+        if(player.y <= topLimiter)
         {
           player.onTop = true;
+          if(!player.isJumping)
+          {
+            player.y = topSide;
+          }
           player.onBottom = false;
+          player.anim      = player.topWalkAnim;
         }
         else {
           player.onTop = false;
           player.onBottom = true;
+          player.anim      = player.bottomFlipWalkAnim;
         }
         player.dx = -player.speed;
-        player.anim      = player.walkAnim;
         player.lastWalkLeft = true;
       }
-      else if (KEY_STATUS.up && (player.x <= leftSide|| player.x >= rightSide))
+      else if (KEY_STATUS.up && (player.x <= leftLimiter || player.x >= rightSide))
       {
         player.onTop = false;
         player.onBottom = false;
-        if(player.x <= leftSide)
+        if(player.x <= leftLimiter)
         {
           player.onLeft = true;
+          if(!player.isJumping)
+          {
+            player.x = leftSide;
+          }
           player.onRight = false;
+          player.anim      = player.leftFlipWalkAnim;
         }
         else {
           player.onLeft = false;
           player.onRight = true;
+          player.anim      = player.rightWalkAnim;
         }
         player.dy = -player.speed;
-        player.anim      = player.flipWalkAnim;
         player.lastWalkLeft = false;
       }
-      else if(KEY_STATUS.down && (player.x <= leftSide || player.x >= rightSide))
+      else if(KEY_STATUS.down && (player.x <= leftLimiter || player.x >= rightSide))
       {
         player.onTop = false;
         player.onBottom = false;
-        if(player.x <= leftSide)
+        if(player.x <= leftLimiter)
         {
           player.onLeft = true;
+          if(!player.isJumping)
+          {
+            player.x = leftSide;
+          }
           player.onRight = false;
+          player.anim      = player.leftWalkAnim;
         }
         else {
           player.onLeft = false;
           player.onRight = true;
+          player.anim      = player.rightFlipWalkAnim;
         }
         player.dy = player.speed;
-        player.anim      = player.walkAnim;
         player.lastWalkLeft = true;
       }
       else
@@ -660,11 +787,39 @@ function initialize() {
         }
         if(player.lastWalkLeft)
         {
-          player.anim      = player.standAnim;
+          if(player.onLeft)
+          {
+            player.anim      = player.leftStandAnim;
+          }
+          else if(player.onRight)
+          {
+            player.anim      = player.rightFlipStandAnim;
+          }
+          else if(player.onTop){
+            player.anim      = player.topStandAnim;
+          }
+          else {
+            player.anim      = player.bottomFlipStandAnim;
+          }
+
         }
         else
         {
-          player.anim      = player.flipStandAnim;
+          if(player.onLeft)
+          {
+            player.anim      = player.leftFlipStandAnim;
+          }
+          else if(player.onRight)
+          {
+            player.anim      = player.rightStandAnim;
+          }
+          else if(player.onTop){
+            player.anim      = player.topFlipStandAnim;
+          }
+          else{
+            player.anim      = player.bottomStandAnim;
+          }
+
         }
       }
 
@@ -728,6 +883,9 @@ function initialize() {
     return player;
   })(Object.create(Vector.prototype));
 
+  cage = new Cage();
+  cage.reset();
+
   background = (function() {
 
     this.draw = function() {
@@ -739,6 +897,7 @@ function initialize() {
       reset: this.reset
     };
   })();
+
   var num = {32: 'space',
              39: 'right',
              37: 'left',
