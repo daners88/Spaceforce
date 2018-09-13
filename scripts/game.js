@@ -11,7 +11,7 @@ var player, cage, background, assetLoader, KEY_CODES, KEY_STATUS;
 var bricks = [], aliens = [];
 var brickL = 38;
 var brickH = 19;
-var topSide = 50, bottomSide = 500, rightSide = 845, leftSide = 88, leftLimiter = 110, topLimiter = 65;
+var topSide = 50, bottomSide = 500, rightSide = 842, leftSide = 90, leftLimiter = 110, topLimiter = 65;
 
 var canUseLocalStorage = 'localStorage' in window && window.localStorage !== null;
 
