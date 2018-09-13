@@ -1,0 +1,50 @@
+<!DOCTYPE html>
+<html>
+<head>
+  <meta charset="UTF-8">
+  <title>Spaceforce</title>
+  <link rel="stylesheet" href="styles/game.css" type="text/css" media="screen">
+    <script type="text/javascript" src="scripts/jquery.2.1.1.min.js"></script>
+</head>
+<body>
+  <div class="wrapper">
+    <div id="menu">
+      <div id="progress">
+        <div id="percent"><font color="white">Loading: <span id="p"></span></font></div>
+        <progress id="progress-bar" value="0"></progress>
+      </div>
+      <div id="menu">
+        <ul>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li></li>
+          <li><font color="white"><strong>Use arrow keys, w-a-s-d, or joystick to go up and down, left and right.</strong></font></li>
+          <li><font color="white"><strong>Use spacebar to jump</strong></font></li>
+          <li></li>
+          <li id="starter"><a href="javascript:void(0)" class="button play">Start</a></li>
+          <li><a href="index.html" class="button">Main Menu</a></li>
+
+        </ul>
+      </div>
+    </div>
+    <canvas id="myCanvas" width="950" height="625">
+    </canvas>
+    <div id="game-over">
+      <h2><font color="white">Final Score: <span id="score"></span></font></h2>
+      <a href="javascript:void(0)" class="button restart">Try again?</a>
+    </br>
+      <a href="index.html" class="button">Main Menu</a>
+    </div>
+  </div>
+  <script type="text/javascript" src="scripts/game.js"></script>
+</body>
+</html>

@@ -1,0 +1,179 @@
+
+
+#menu{
+  background-image: url('../images/background.png');
+  background-size: cover;
+}
+*, *:before, *:after {
+  box-sizing: border-box;
+}
+
+
+body {
+  font-family: arial, sans-serif;
+  font-size: 16px;
+  -webkit-user-select: none;
+  -moz-user-select: none;
+  -ms-user-select: none;
+  user-select: none;
+  cursor: default;
+}
+
+canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  border: 1px solid black;
+  z-index: 1;
+  width: 950px;
+  height: 625px;
+}
+
+ul {
+  list-style: none;
+  padding: 0;
+  margin: 0
+}
+li {
+  padding: 10px 0;
+}
+
+a {
+  text-decoration: none;
+  color: inherit;
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+}
+
+.wrapper {
+  width: 950px;
+  height: 625px;
+  position: absolute;
+  top: 5px;
+  left: 5px;
+}
+
+#menu {
+  position: absolute;
+  width: 950px;
+  height: 625px;
+  border: 1px solid black;
+  z-index: 2;
+  text-align: center;
+  background-color: grey;
+}
+
+#progress {
+  height: 12%;
+  margin: auto;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+}
+#percent {
+  color: white;
+  font-weight: bold;
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+}
+#progress-bar {
+  width: 200px;
+}
+
+.titleGif {
+    width: 950px;
+}
+
+li.disable-links{
+  pointer-events: none;
+}
+
+#main {
+  display: none;
+  height: 60%;
+  overflow: auto;
+  margin: auto;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+}
+#main h1 {
+  color: white;
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+}
+
+.button {
+  display: block;
+  width: 140px;
+  margin: 0 auto;
+  height: 28px;
+  line-height: 30px;
+  border: 1px solid #ffffff;
+  color: white;
+  font-weight: bold;
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+  background-color: #8000ff;
+  background-image: -webkit-linear-gradient(bottom, #8000ff 0%, #400080 100%);
+  background-image:         linear-gradient(to bottom, #8000ff 0%, #400080 100%);
+  border-radius: 5px;
+}
+
+.small-btn {
+  margin: 0 auto;
+  line-height: 30px;
+  border: 1px solid #ffffff;
+  color: white;
+  font-weight: bold;
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+  background-color: #8000ff;
+  background-image: -webkit-linear-gradient(bottom, #8000ff 0%, #400080 100%);
+  background-image:         linear-gradient(to bottom, #8000ff 0%, #400080 100%);
+  border-radius: 5px;
+}
+
+.small-btn:hover {
+  background-color: #0c86b2;
+  background-image: -webkit-linear-gradient(bottom, #400080 0%, #8000ff 100%);
+  background-image:         linear-gradient(to bottom, #400080 0%, #8000ff 100%);
+}
+
+.button:hover {
+  background-color: #0c86b2;
+  background-image: -webkit-linear-gradient(bottom, #400080 0%, #8000ff 100%);
+  background-image:         linear-gradient(to bottom, #400080 0%, #8000ff 100%);
+}
+
+#credits {
+  display: none;
+  line-height: 30px;
+  margin: auto;
+  position: absolute;
+  top: 0; left: 0; bottom: 0; right: 0;
+}
+#credits li {
+  padding: 5px 0;
+}
+
+.artwork, .music, .developer {
+  text-shadow: -1px -1px 0 #000, 1px -1px 0 #000, -1px 1px 0 #000, 1px 1px 0 #000;
+}
+
+.artwork {
+  color: #fa8526;
+}
+.music {
+  color: #e6e71f;
+}
+.developer {
+  color: #13eb8a;
+}
+
+.back, .back:hover {
+  margin-top: 10px;
+}
+
+#game-over {
+  display: none;
+  text-align: center;
+  padding-top: 92px;
+  z-index: 1;
+  width: 950px;
+  height: 625px;
+  position: absolute;
+}
