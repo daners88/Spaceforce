@@ -12,6 +12,7 @@ var bricks = [], aliens = [];
 var brickL = 38;
 var brickH = 19;
 var topSide = 50, bottomSide = 500, rightSide = 842, leftSide = 90, leftLimiter = 110, topLimiter = 65;
+var currentLevel = 1;
 
 var canUseLocalStorage = 'localStorage' in window && window.localStorage !== null;
 
@@ -252,9 +253,15 @@ function Sprite(x, y, w, h, type) {
   this.type   = type;
   Vector.call(this, x, y, 0, 0);
 
+  if(type == 'bBrickH' || type == 'tBrickH' || type == 'lBrickV' || type == 'rBrickV')
+  {
+    this.visible = false;
+    this.layer = 0;
+  }
+
   this.update = function() {
-    this.dx = -player.speed;
-    this.advance();
+    // this.dx = -player.speed;
+    // this.advance();
   };
 
   this.draw = function() {
@@ -266,14 +273,33 @@ function Sprite(x, y, w, h, type) {
 }
 Sprite.prototype = Object.create(Vector.prototype);
 
-function getRandomOppositeDirection(num)
+function getRandomDirection(num)
 {
-  var multiplier = 1;
-  if (num > 0)
+  // 1/8 chance to remain same direction
+  var multiplier = rand(1, 8);
+  if(num > 0)
   {
-    multiplier = -1;
+    if (multiplier > 1)
+    {
+      multiplier = -1;
+    }
   }
-  var newNum = rand(1, 2) * multiplier;
+  else
+  {
+    if (multiplier > 1)
+    {
+      multiplier = 1;
+    }
+  }
+  var newNum;
+  if(currentLevel == 1)
+  {
+    newNum = 1 * multiplier;
+  }
+  else
+  {
+    newNum = rand(1, 2) * multiplier;
+  }
   return newNum;
 }
 
@@ -294,37 +320,168 @@ function getAlienType() {
   return type;
 }
 
+function buildBricks(){
+  var rangeStart, rangeEnd;
+  var lowestLayer = 0;
+  var bricksInRange = [];
+  if(player.onTop || player.onBottom)
+  {
+    rangeStart = player.x - brickL;
+    rangeEnd = player.x + brickL;
+    if(player.onTop)
+    {
+      for(var i = 0; i < bricks.length; i++)
+      {
+        if(bricks[i].type == 'tBrickH' && bricks[i].x > rangeStart && bricks[i].x < rangeEnd)
+        {
+          if(bricks[i].visible)
+          {
+            if(bricks[i].layer > lowestLayer)
+            {
+              lowestLayer = bricks[i].layer;
+            }
+          }
+          bricksInRange.push(bricks[i]);
+        }
+      }
+      for(var j = 0; j < bricksInRange.length; j++)
+      {
+        if(bricksInRange[j].layer < lowestLayer + 4)
+        {
+          bricksInRange[j].visible = true;
+        }
+      }
+    }
+    else
+    {
+      for(var i = 0; i < bricks.length; i++)
+      {
+        if(bricks[i].type == 'bBrickH' && bricks[i].x > rangeStart && bricks[i].x < rangeEnd)
+        {
+          if(bricks[i].visible)
+          {
+            if(bricks[i].layer > lowestLayer)
+            {
+              lowestLayer = bricks[i].layer;
+            }
+          }
+          bricksInRange.push(bricks[i]);
+        }
+      }
+      for(var j = 0; j < bricksInRange.length; j++)
+      {
+        if(bricksInRange[j].layer < lowestLayer + 4)
+        {
+          bricksInRange[j].visible = true;
+        }
+      }
+    }
+  }
+  else
+  {
+    rangeStart = player.y - brickL;
+    rangeEnd = player.y + brickL;
+    if(player.onLeft)
+    {
+      for(var i = 0; i < bricks.length; i++)
+      {
+        if(bricks[i].type == 'lBrickV' && bricks[i].y > rangeStart && bricks[i].y < rangeEnd)
+        {
+          if(bricks[i].visible)
+          {
+            if(bricks[i].layer > lowestLayer)
+            {
+              lowestLayer = bricks[i].layer;
+            }
+          }
+          bricksInRange.push(bricks[i]);
+        }
+      }
+      for(var j = 0; j < bricksInRange.length; j++)
+      {
+        if(bricksInRange[j].layer < lowestLayer + 4)
+        {
+          bricksInRange[j].visible = true;
+        }
+      }
+    }
+    else
+    {
+      for(var i = 0; i < bricks.length; i++)
+      {
+        if(bricks[i].type == 'rBrickV' && bricks[i].y > rangeStart && bricks[i].y < rangeEnd)
+        {
+          if(bricks[i].visible)
+          {
+            if(bricks[i].layer > lowestLayer)
+            {
+              lowestLayer = bricks[i].layer;
+            }
+          }
+          bricksInRange.push(bricks[i]);
+        }
+      }
+      for(var j = 0; j < bricksInRange.length; j++)
+      {
+        if(bricksInRange[j].layer < lowestLayer + 4)
+        {
+          bricksInRange[j].visible = true;
+        }
+      }
+    }
+  }
+}
+
 function updateBricks() {
   for (var i = 0; i < bricks.length; i++) {
-    //bricks[i].update();
-    bricks[i].draw();
+    bricks[i].update();
+    if(bricks[i].visible)
+    {
+          bricks[i].draw();
+    }
+  }
+  if(!player.isJumping && !player.isStanding)
+  {
+    buildBricks();
   }
 }
 
 function updateAliens() {
   for (var i = 0; i < aliens.length; i++) {
-    for(var j = 0; j < bricks.length; j++){
-      if(aliens[i].minDist(bricks[j]) <= aliens[i].width - brickH/2)
-      {
-        if(bricks[j].type == 'lBrickV')
+    if(aliens[i].y == topSide || aliens[i].y == bottomSide || aliens[i].x == rightSide || aliens[i].x == leftSide)
+    {
+      aliens[i].escaped = true;
+    }
+    else
+    {
+      for(var j = 0; j < bricks.length; j++){
+        if(!aliens[i].escaped && bricks[j].visible && aliens[i].minDist(bricks[j]) <= aliens[i].width - brickH/2)
         {
-          aliens[i].dy = getRandomOppositeDirection(aliens[i].dy);
-          aliens[i].dx = aliens[i].dx > 0 ? aliens[i].dx : -aliens[i].dx;
-        }
-        else if(bricks[j].type == 'rBrickV')
-        {
-          aliens[i].dy = getRandomOppositeDirection(aliens[i].dy);
-          aliens[i].dx = aliens[i].dx > 0 ? -aliens[i].dx : aliens[i].dx;
-        }
-        else if(bricks[j].type == 'tBrickH')
-        {
-          aliens[i].dx = getRandomOppositeDirection(aliens[i].dx);
-          aliens[i].dy = aliens[i].dy > 0 ? -aliens[i].dy : aliens[i].dy;
-        }
-        else if(bricks[j].type == 'bBrickH')
-        {
-          aliens[i].dx = getRandomOppositeDirection(aliens[i].dx);
-          aliens[i].dy = aliens[i].dy > 0 ? aliens[i].dy : -aliens[i].dy;
+          bricks[j].visible = false;
+          if(bricks[j].type == 'lBrickV')
+          {
+            aliens[i].dy = getRandomDirection(aliens[i].dy);
+            //aliens[i].dx = aliens[i].dx > 0 ? aliens[i].dx : -aliens[i].dx;
+            aliens[i].dx = getRandomDirection(aliens[i].dx);
+          }
+          else if(bricks[j].type == 'rBrickV')
+          {
+            aliens[i].dy = getRandomDirection(aliens[i].dy);
+            //aliens[i].dx = aliens[i].dx > 0 ? -aliens[i].dx : aliens[i].dx;
+            aliens[i].dx = getRandomDirection(aliens[i].dx);
+          }
+          else if(bricks[j].type == 'tBrickH')
+          {
+            aliens[i].dx = getRandomDirection(aliens[i].dx);
+            //aliens[i].dy = aliens[i].dy > 0 ? aliens[i].dy : -aliens[i].dy;
+            aliens[i].dy = getRandomDirection(aliens[i].dy);
+          }
+          else if(bricks[j].type == 'bBrickH')
+          {
+            aliens[i].dx = getRandomDirection(aliens[i].dx);
+            //aliens[i].dy = aliens[i].dy > 0 ? -aliens[i].dy : aliens[i].dy;
+            aliens[i].dy = getRandomDirection(aliens[i].dy);
+          }
         }
       }
     }
@@ -351,27 +508,202 @@ function spawnSprites() {
 }
 
 function spawnBrickSprites() {
-  var x = 791;
-  var y = 486;
-  var by = 106;
-  var bx = 810;
+  //brick spawn starts for top, bottom, right, left, designated by layer number
+  var tX1 = 810, tY1 = 106, bX1 = 791, bY1 = 486, rX1 = 830, rY1 = 467, lX1 = 147, lY1 = 448;
+  var tX2 = tX1 - 19, tY2 = tY1 + 19, bX2 = bX1 - 19, bY2 = bY1 - 19, rX2 = rX1 - 19, rY2 = rY1 - 19, lX2 = lX1 + 19, lY2 = lY1 - 19;
+  var tX3 = tX2 - 19, tY3 = tY2 + 19, bX3 = bX2 - 19, bY3 = bY2 - 19, rX3 = rX2 - 19, rY3 = rY2 - 19, lX3 = lX2 + 19, lY3 = lY2 - 19;
+  var tX4 = tX3 - 19, tY4 = tY3 + 19, bX4 = bX3 - 19, bY4 = bY3 - 19, rX4 = rX3 - 19, rY4 = rY3 - 19, lX4 = lX3 + 19, lY4 = lY3 - 19;
+  var tX5 = tX4 - 19, tY5 = tY4 + 19, bX5 = bX4 - 19, bY5 = bY4 - 19, rX5 = rX4 - 19, rY5 = rY4 - 19, lX5 = lX4 + 19, lY5 = lY4 - 19;
+  var tX6 = tX5 - 19, tY6 = tY5 + 19, bX6 = bX5 - 19, bY6 = bY5 - 19, rX6 = rX5 - 19, rY6 = rY5 - 19, lX6 = lX5 + 19, lY6 = lY5 - 19;
+  var tX7 = tX6 - 19, tY7 = tY6 + 19, bX7 = bX6 - 19, bY7 = bY6 - 19, rX7 = rX6 - 19, rY7 = rY6 - 19, lX7 = lX6 + 19, lY7 = lY6 - 19;
+  var tX8 = tX7 - 19, tY8 = tY7 + 19, bX8 = bX7 - 19, bY8 = bY7 - 19, rX8 = rX7 - 19, rY8 = rY7 - 19, lX8 = lX7 + 19, lY8 = lY7 - 19;
+  var tX9 = tX8 - 19, tY9 = tY8 + 19, bX9 = bX8 - 19, bY9 = bY8 - 19, rX9 = rX8 - 19, rY9 = rY8 - 19, lX9 = lX8 + 19, lY9 = lY8 - 19;
+  //first layer
   for(var i = 0; i < 18; i++)
   {
-    bricks.push(new Sprite(x, y, brickL, brickH, 'tBrickH'));
-    bricks.push(new Sprite(bx, by, brickL, brickH, 'bBrickH'));
-    x = x - brickL;
-    bx = bx - brickL;
+    bricks.push(new Sprite(tX1, tY1, brickL, brickH, 'tBrickH'));
+    bricks[bricks.length - 1].layer = 1;
+    if(currentLevel < 3)
+    {
+      bricks[bricks.length - 1].visible = true;
+    }
+    bricks.push(new Sprite(bX1, bY1, brickL, brickH, 'bBrickH'));
+    bricks[bricks.length - 1].layer = 1;
+    if(currentLevel < 2)
+    {
+      bricks[bricks.length - 1].visible = true;
+    }
+    tX1 = tX1 - brickL;
+    bX1 = bX1 - brickL;
   }
-  x = 830;
-  y = 467;
-  bx =147;
-  by =448;
   for(var i = 0; i < 10; i++)
   {
-    bricks.push(new Sprite(x, y, brickH, brickL, 'rBrickV'));
-    bricks.push(new Sprite(bx, by, brickH, brickL, 'lBrickV'));
-    y = y - brickL;
-    by = by - brickL;
+    bricks.push(new Sprite(rX1, rY1, brickH, brickL, 'rBrickV'));
+    bricks[bricks.length - 1].layer = 1;
+    if(currentLevel < 3)
+    {
+      bricks[bricks.length - 1].visible = true;
+    }
+    bricks.push(new Sprite(lX1, lY1, brickH, brickL, 'lBrickV'));
+    bricks[bricks.length - 1].layer = 1;
+    if(currentLevel < 2)
+    {
+      bricks[bricks.length - 1].visible = true;
+    }
+    rY1 = rY1 - brickL;
+    lY1 = lY1 - brickL;
+  }
+  //second layer
+  for(var i = 0; i < 17; i++)
+  {
+    bricks.push(new Sprite(tX2, tY2, brickL, brickH, 'tBrickH'));
+    bricks[bricks.length - 1].layer = 2;
+    bricks.push(new Sprite(bX2, bY2, brickL, brickH, 'bBrickH'));
+    bricks[bricks.length - 1].layer = 2;
+    tX2 = tX2 - brickL;
+    bX2 = bX2 - brickL;
+  }
+  for(var i = 0; i < 9; i++)
+  {
+    bricks.push(new Sprite(rX2, rY2, brickH, brickL, 'rBrickV'));
+    bricks[bricks.length - 1].layer = 2;
+    bricks.push(new Sprite(lX2, lY2, brickH, brickL, 'lBrickV'));
+    bricks[bricks.length - 1].layer = 2;
+    rY2 = rY2 - brickL;
+    lY2 = lY2 - brickL;
+  }
+  //third layer
+  for(var i = 0; i < 16; i++)
+  {
+    bricks.push(new Sprite(tX3, tY3, brickL, brickH, 'tBrickH'));
+    bricks[bricks.length - 1].layer = 3;
+    bricks.push(new Sprite(bX3, bY3, brickL, brickH, 'bBrickH'));
+    bricks[bricks.length - 1].layer = 3;
+    tX3 = tX3 - brickL;
+    bX3 = bX3 - brickL;
+  }
+  for(var i = 0; i < 8; i++)
+  {
+    bricks.push(new Sprite(rX3, rY3, brickH, brickL, 'rBrickV'));
+    bricks[bricks.length - 1].layer = 3;
+    bricks.push(new Sprite(lX3, lY3, brickH, brickL, 'lBrickV'));
+    bricks[bricks.length - 1].layer = 3;
+    rY3 = rY3 - brickL;
+    lY3 = lY3 - brickL;
+  }
+  //fourth layer
+  for(var i = 0; i < 15; i++)
+  {
+    bricks.push(new Sprite(tX4, tY4, brickL, brickH, 'tBrickH'));
+    bricks[bricks.length - 1].layer = 4;
+    bricks.push(new Sprite(bX4, bY4, brickL, brickH, 'bBrickH'));
+    bricks[bricks.length - 1].layer = 4;
+    tX4 = tX4 - brickL;
+    bX4 = bX4 - brickL;
+  }
+  for(var i = 0; i < 7; i++)
+  {
+    bricks.push(new Sprite(rX4, rY4, brickH, brickL, 'rBrickV'));
+    bricks[bricks.length - 1].layer = 4;
+    bricks.push(new Sprite(lX4, lY4, brickH, brickL, 'lBrickV'));
+    bricks[bricks.length - 1].layer = 4;
+    rY4 = rY4 - brickL;
+    lY4 = lY4 - brickL;
+  }
+  //fifth layer
+  for(var i = 0; i < 14; i++)
+  {
+    bricks.push(new Sprite(tX5, tY5, brickL, brickH, 'tBrickH'));
+    bricks[bricks.length - 1].layer = 5;
+    bricks.push(new Sprite(bX5, bY5, brickL, brickH, 'bBrickH'));
+    bricks[bricks.length - 1].layer = 5;
+    tX5 = tX5 - brickL;
+    bX5 = bX5 - brickL;
+  }
+  for(var i = 0; i < 6; i++)
+  {
+    bricks.push(new Sprite(rX5, rY5, brickH, brickL, 'rBrickV'));
+    bricks[bricks.length - 1].layer = 5;
+    bricks.push(new Sprite(lX5, lY5, brickH, brickL, 'lBrickV'));
+    bricks[bricks.length - 1].layer = 5;
+    rY5 = rY5 - brickL;
+    lY5 = lY5 - brickL;
+  }
+  //sixth layer
+  for(var i = 0; i < 13; i++)
+  {
+    bricks.push(new Sprite(tX6, tY6, brickL, brickH, 'tBrickH'));
+    bricks[bricks.length - 1].layer = 6;
+    bricks.push(new Sprite(bX6, bY6, brickL, brickH, 'bBrickH'));
+    bricks[bricks.length - 1].layer = 6;
+    tX6 = tX6 - brickL;
+    bX6 = bX6 - brickL;
+  }
+  for(var i = 0; i < 5; i++)
+  {
+    bricks.push(new Sprite(rX6, rY6, brickH, brickL, 'rBrickV'));
+    bricks[bricks.length - 1].layer = 6;
+    bricks.push(new Sprite(lX6, lY6, brickH, brickL, 'lBrickV'));
+    bricks[bricks.length - 1].layer = 6;
+    rY6 = rY6 - brickL;
+    lY6 = lY6 - brickL;
+  }
+  //seventh layer
+  for(var i = 0; i < 12; i++)
+  {
+    bricks.push(new Sprite(tX7, tY7, brickL, brickH, 'tBrickH'));
+    bricks[bricks.length - 1].layer = 7;
+    bricks.push(new Sprite(bX7, bY7, brickL, brickH, 'bBrickH'));
+    bricks[bricks.length - 1].layer = 7;
+    tX7 = tX7 - brickL;
+    bX7 = bX7 - brickL;
+  }
+  for(var i = 0; i < 4; i++)
+  {
+    bricks.push(new Sprite(rX7, rY7, brickH, brickL, 'rBrickV'));
+    bricks[bricks.length - 1].layer = 7;
+    bricks.push(new Sprite(lX7, lY7, brickH, brickL, 'lBrickV'));
+    bricks[bricks.length - 1].layer = 7;
+    rY7 = rY7 - brickL;
+    lY7 = lY7 - brickL;
+  }
+  //eighth layer
+  for(var i = 0; i < 11; i++)
+  {
+    bricks.push(new Sprite(tX8, tY8, brickL, brickH, 'tBrickH'));
+    bricks[bricks.length - 1].layer = 8;
+    bricks.push(new Sprite(bX8, bY8, brickL, brickH, 'bBrickH'));
+    bricks[bricks.length - 1].layer = 8;
+    tX8 = tX8 - brickL;
+    bX8 = bX8 - brickL;
+  }
+  for(var i = 0; i < 3; i++)
+  {
+    bricks.push(new Sprite(rX8, rY8, brickH, brickL, 'rBrickV'));
+    bricks[bricks.length - 1].layer = 8;
+    bricks.push(new Sprite(lX8, lY8, brickH, brickL, 'lBrickV'));
+    bricks[bricks.length - 1].layer = 8;
+    rY8 = rY8 - brickL;
+    lY8 = lY8 - brickL;
+  }
+  //ninth layer
+  for(var i = 0; i < 10; i++)
+  {
+    bricks.push(new Sprite(tX9, tY9, brickL, brickH, 'tBrickH'));
+    bricks[bricks.length - 1].layer = 9;
+    bricks.push(new Sprite(bX9, bY9, brickL, brickH, 'bBrickH'));
+    bricks[bricks.length - 1].layer = 9;
+    tX9 = tX9 - brickL;
+    bX9 = bX9 - brickL;
+  }
+  for(var i = 0; i < 2; i++)
+  {
+    bricks.push(new Sprite(rX9, rY9, brickH, brickL, 'rBrickV'));
+    bricks[bricks.length - 1].layer = 9;
+    bricks.push(new Sprite(lX9, lY9, brickH, brickL, 'lBrickV'));
+    bricks[bricks.length - 1].layer = 9;
+    rY9 = rY9 - brickL;
+    lY9 = lY9 - brickL;
   }
 }
 
@@ -447,10 +779,19 @@ function makeAlien(type) {
   this.anim = this.walkAnim;
   this.multiplierx = Math.random() > 0.5 ? 1 : -1;
   this.multipliery = Math.random() > 0.5 ? 1 : -1;
-  this.dy        = rand(1, 2) * this.multipliery;
-  this.dx        = rand(1, 2) * this.multiplierx;
+  if(currentLevel > 1)
+  {
+    this.dy        = rand(1, 2) * this.multipliery;
+    this.dx        = rand(1, 2) * this.multiplierx;
+  }
+  else
+  {
+    this.dy        = 1 * this.multipliery;
+    this.dx        = 1 * this.multiplierx;
+  }
   this.speed      = rand(1, 2);
   this.clockwise = rand(0, 1);
+  this.escaped = false;
 
   Vector.call(this, 0, 0, this.dx, this.dy);
 
@@ -641,6 +982,7 @@ function initialize() {
     player.jumpDy    = -5;
     player.isFalling = false;
     player.isJumping = false;
+    player.isStanding = false;
 
     player.topWalkAnim  = new Animation(player.topSheet, 5, 0, 3);
     player.topFlipWalkAnim = new Animation(player.topFlipSheet, 5, 0, 3);
@@ -692,6 +1034,7 @@ function initialize() {
 
       if (KEY_STATUS.right && (player.y <= topLimiter|| player.y >= bottomSide))
       {
+        player.isStanding = false;
         player.onLeft = false;
         player.onRight = false;
         if(player.y <= topLimiter)
@@ -714,6 +1057,7 @@ function initialize() {
       }
       else if(KEY_STATUS.left && (player.y <= topLimiter|| player.y >= bottomSide))
       {
+        player.isStanding = false;
         player.onLeft = false;
         player.onRight = false;
         if(player.y <= topLimiter)
@@ -736,6 +1080,7 @@ function initialize() {
       }
       else if (KEY_STATUS.up && (player.x <= leftLimiter || player.x >= rightSide))
       {
+        player.isStanding = false;
         player.onTop = false;
         player.onBottom = false;
         if(player.x <= leftLimiter)
@@ -758,6 +1103,7 @@ function initialize() {
       }
       else if(KEY_STATUS.down && (player.x <= leftLimiter || player.x >= rightSide))
       {
+        player.isStanding = false;
         player.onTop = false;
         player.onBottom = false;
         if(player.x <= leftLimiter)
@@ -780,6 +1126,7 @@ function initialize() {
       }
       else
       {
+        player.isStanding = true;
         if(!player.isJumping)
         {
           player.dx = 0;
