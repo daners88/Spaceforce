@@ -12,6 +12,7 @@ var bricks = [], aliens = [];
 var brickL = 38;
 var brickH = 19;
 var topSide = 50, bottomSide = 500, rightSide = 842, leftSide = 90, leftLimiter = 110, topLimiter = 65;
+var alienTopLimit = 73, alienRightLimit = 850, alienLeftLimit = 110, alienBottomLimit = 507;
 var currentLevel = 1;
 
 var canUseLocalStorage = 'localStorage' in window && window.localStorage !== null;
@@ -77,22 +78,23 @@ function Vector(x, y, dx, dy) {
 }
 
 Vector.prototype.advance = function() {
-
+  var passingValue;
   this.x += this.dx;
-  if(this.x > rightSide)
+  if((this.type != 'mc' && this.x > alienRightLimit) || (this.type == 'mc' && this.x > rightSide))
   {
-
     if(this.type != 'mc')
     {
-      this.x = rightSide;
+      this.x = alienRightLimit;
       if(this.clockwise)
       {
-        this.dy = this.dx;
+        passingValue = this.dx;
+        this.dy = passingValue > 0 ? passingValue : -passingValue;
         this.dx = 0;
       }
       else
       {
-        this.dy = -this.dx;
+        passingValue = -this.dx;
+        this.dy = passingValue < 0 ? passingValue : -passingValue;
         this.dx = 0;
       }
     }
@@ -104,20 +106,22 @@ Vector.prototype.advance = function() {
       }
     }
   }
-  else if(this.x < leftSide)
+  else if((this.type != 'mc' && this.x < alienLeftLimit) || this.x < leftSide)
   {
 
     if(this.type != 'mc')
     {
-      this.x = leftSide;
+      this.x = alienLeftLimit;
       if(this.clockwise)
       {
-        this.dy = -this.dx;
+        passingValue = this.dx;
+        this.dy = passingValue < 0 ? passingValue : -passingValue;
         this.dx = 0;
       }
       else
       {
-        this.dy = this.dx;
+        passingValue = -this.dx;
+        this.dy = passingValue > 0 ? passingValue : -passingValue;
         this.dx = 0;
       }
     }
@@ -130,20 +134,21 @@ Vector.prototype.advance = function() {
     }
   }
   this.y += this.dy;
-  if(this.y > bottomSide)
+  if((this.type != 'mc' && this.y > alienBottomLimit) || (this.type == 'mc' &&this.y > bottomSide))
   {
-
     if(this.type != 'mc')
     {
-      this.y = bottomSide;
+      this.y = alienBottomLimit;
       if(this.clockwise)
       {
-        this.dx = -this.dy;
+        passingValue = -this.dy;
+        this.dx = passingValue < 0 ? passingValue : -passingValue;
         this.dy = 0;
       }
       else
       {
-        this.dx = this.dy;
+        passingValue = this.dy;
+        this.dx = passingValue > 0 ? passingValue : -passingValue;
         this.dy = 0;
       }
     }
@@ -155,20 +160,21 @@ Vector.prototype.advance = function() {
       }
     }
   }
-  else if(this.y < topSide)
+  else if((this.type != 'mc' && this.y < alienTopLimit) || this.y < topSide)
   {
-
     if(this.type != 'mc')
     {
-      this.y = topSide;
+      this.y = alienTopLimit;
       if(this.clockwise)
       {
-        this.dx = this.dy;
+        passingValue = this.dy;
+        this.dx = passingValue > 0 ? passingValue : -passingValue;
         this.dy = 0;
       }
       else
       {
-        this.dx = -this.dy;
+        passingValue = -this.dy;
+        this.dx = passingValue < 0 ? passingValue : -passingValue;
         this.dy = 0;
       }
     }
@@ -291,15 +297,7 @@ function getRandomDirection(num)
       multiplier = 1;
     }
   }
-  var newNum;
-  if(currentLevel == 1)
-  {
-    newNum = 1 * multiplier;
-  }
-  else
-  {
-    newNum = rand(1, 2) * multiplier;
-  }
+  var newNum = rand(1, 2) * multiplier;
   return newNum;
 }
 
@@ -448,7 +446,7 @@ function updateBricks() {
 
 function updateAliens() {
   for (var i = 0; i < aliens.length; i++) {
-    if(aliens[i].y == topSide || aliens[i].y == bottomSide || aliens[i].x == rightSide || aliens[i].x == leftSide)
+    if(aliens[i].y <= alienTopLimit || aliens[i].y >= alienBottomLimit || aliens[i].x >= alienRightLimit || aliens[i].x <= alienLeftLimit)
     {
       aliens[i].escaped = true;
     }
@@ -779,18 +777,10 @@ function makeAlien(type) {
   this.anim = this.walkAnim;
   this.multiplierx = Math.random() > 0.5 ? 1 : -1;
   this.multipliery = Math.random() > 0.5 ? 1 : -1;
-  if(currentLevel > 1)
-  {
-    this.dy        = rand(1, 2) * this.multipliery;
-    this.dx        = rand(1, 2) * this.multiplierx;
-  }
-  else
-  {
-    this.dy        = 1 * this.multipliery;
-    this.dx        = 1 * this.multiplierx;
-  }
+  this.dy        = rand(1, 2) * this.multipliery;
+  this.dx        = rand(1, 2) * this.multiplierx;
   this.speed      = rand(1, 2);
-  this.clockwise = rand(0, 1);
+  this.clockwise = rand(0, 1) > 0 ? false : true;
   this.escaped = false;
 
   Vector.call(this, 0, 0, this.dx, this.dy);
