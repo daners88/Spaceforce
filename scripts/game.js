@@ -13,7 +13,7 @@ var brickL = 38;
 var brickH = 19;
 var topSide = 50, bottomSide = 500, rightSide = 842, leftSide = 90, leftLimiter = 110, topLimiter = 65;
 var alienTopLimit = 73, alienRightLimit = 850, alienLeftLimit = 110, alienBottomLimit = 507;
-var currentLevel = 1;
+var currentLevel = 1, lastXBuildPixel = 0, lastYBuildPixel = 0, pixelThreshhold = 76;
 
 var canUseLocalStorage = 'localStorage' in window && window.localStorage !== null;
 
@@ -80,6 +80,14 @@ function Vector(x, y, dx, dy) {
 Vector.prototype.advance = function() {
   var passingValue;
   this.x += this.dx;
+  if(this.type == 'mc')
+  {
+    if(Math.abs(this.x - lastXBuildPixel) >= pixelThreshhold)
+    {
+      player.canBuild = true;
+      lastXBuildPixel = this.x;
+    }
+  }
   if((this.type != 'mc' && this.x > alienRightLimit) || (this.type == 'mc' && this.x > rightSide))
   {
     if(this.type != 'mc')
@@ -134,6 +142,14 @@ Vector.prototype.advance = function() {
     }
   }
   this.y += this.dy;
+  if(this.type == 'mc')
+  {
+    if(Math.abs(this.y - lastYBuildPixel) >= pixelThreshhold)
+    {
+      player.canBuild = true;
+      lastYBuildPixel = this.y;
+    }
+  }
   if((this.type != 'mc' && this.y > alienBottomLimit) || (this.type == 'mc' &&this.y > bottomSide))
   {
     if(this.type != 'mc')
@@ -428,6 +444,7 @@ function buildBricks(){
       }
     }
   }
+  player.canBuild = false;
 }
 
 function updateBricks() {
@@ -438,7 +455,7 @@ function updateBricks() {
           bricks[i].draw();
     }
   }
-  if(!player.isJumping && !player.isStanding)
+  if(!player.isJumping && !player.isStanding && player.canBuild)
   {
     buildBricks();
   }
@@ -964,6 +981,7 @@ function initialize() {
     player.onLeft = false;
     player.onBottom = false;
     player.onRight = false;
+    player.canBuild = true;
 
     player.gravity   = .25;
     player.dy        = 0;
