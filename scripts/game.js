@@ -13,7 +13,9 @@ var brickL = 38;
 var brickH = 19;
 var topSide = 50, bottomSide = 500, rightSide = 842, leftSide = 90, leftLimiter = 110, topLimiter = 65;
 var alienTopLimit = 73, alienRightLimit = 850, alienLeftLimit = 110, alienBottomLimit = 507;
-var currentLevel = 1, lastXBuildPixel = 0, lastYBuildPixel = 0, pixelThreshhold = 76;
+var currentLevel = 1, lastXBuildPixel = 0, lastYBuildPixel = 0, pixelThreshhold = 38;
+// var playerMoney = 1080000;
+// const brickCost = 3000;
 
 var canUseLocalStorage = 'localStorage' in window && window.localStorage !== null;
 
@@ -340,8 +342,8 @@ function buildBricks(){
   var bricksInRange = [];
   if(player.onTop || player.onBottom)
   {
-    rangeStart = player.x - brickL;
-    rangeEnd = player.x + brickL;
+    rangeStart = player.x - brickH;
+    rangeEnd = player.x + brickH;
     if(player.onTop)
     {
       for(var i = 0; i < bricks.length; i++)
