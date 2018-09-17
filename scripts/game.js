@@ -4,18 +4,19 @@ var context = canvas.getContext('2d');
 var spawnPoint= {x:canvas.width/2,y:canvas.height/2 - 19};
 
 //var playerName;
+var lastTimeMoneySpawned = 0;
 var lastTimeAlienSpawned = 0;
 var lastFrameTimeMs = 0;
 var timeTotalMs = 0;
 var player, cage, background, assetLoader, KEY_CODES, KEY_STATUS;
-var bricks = [], aliens = [];
+var bricks = [], aliens = [], pickups = [];
 var brickL = 38;
 var brickH = 19;
 var topSide = 50, bottomSide = 500, rightSide = 842, leftSide = 90, leftLimiter = 110, topLimiter = 65;
 var alienTopLimit = 73, alienRightLimit = 850, alienLeftLimit = 110, alienBottomLimit = 507;
 var currentLevel = 1, lastXBuildPixel = 0, lastYBuildPixel = 0, pixelThreshhold = 38;
-// var playerMoney = 1080000;
-// const brickCost = 3000;
+var playerMoney = 1140000;
+const brickCost = 3000;
 
 var canUseLocalStorage = 'localStorage' in window && window.localStorage !== null;
 
@@ -364,7 +365,11 @@ function buildBricks(){
       {
         if(bricksInRange[j].layer < lowestLayer + 4)
         {
-          bricksInRange[j].visible = true;
+          if(playerMoney >= brickCost)
+          {
+            bricksInRange[j].visible = true;
+            playerMoney -= brickCost;
+          }
         }
       }
     }
@@ -388,7 +393,11 @@ function buildBricks(){
       {
         if(bricksInRange[j].layer < lowestLayer + 4)
         {
-          bricksInRange[j].visible = true;
+          if(playerMoney >= brickCost)
+          {
+            bricksInRange[j].visible = true;
+            playerMoney -= brickCost;
+          }
         }
       }
     }
@@ -417,7 +426,11 @@ function buildBricks(){
       {
         if(bricksInRange[j].layer < lowestLayer + 4)
         {
-          bricksInRange[j].visible = true;
+          if(playerMoney >= brickCost)
+          {
+            bricksInRange[j].visible = true;
+            playerMoney -= brickCost;
+          }
         }
       }
     }
@@ -441,7 +454,11 @@ function buildBricks(){
       {
         if(bricksInRange[j].layer < lowestLayer + 4)
         {
-          bricksInRange[j].visible = true;
+          if(playerMoney >= brickCost)
+          {
+            bricksInRange[j].visible = true;
+            playerMoney -= brickCost;
+          }
         }
       }
     }
@@ -507,6 +524,26 @@ function updateAliens() {
   }
 }
 
+function updatePickups()
+{
+  for(var i = 0; i < pickups.length; i++)
+  {
+    if(lastFrameTimeMs - pickups[i].timeSpawned <= 10000)
+    {
+      if(pickups[i].minDist(player) <= pickups[i].width)
+      {
+        pickups[i].timeSpawned = 0;
+        playerMoney = 1140000;
+      }
+      else
+      {
+        pickups[i].update();
+        pickups[i].draw();
+      }
+    }
+  }
+}
+
 function updatePlayer() {
   player.update();
   player.draw();
@@ -521,6 +558,11 @@ function spawnSprites() {
   {
     spawnAlienSprites();
     lastTimeAlienSpawned = lastFrameTimeMs;
+  }
+  if(lastFrameTimeMs - lastTimeMoneySpawned >= 10000)
+  {
+    spawnMoneySprite();
+    lastTimeMoneySpawned = lastFrameTimeMs;
   }
 }
 
@@ -731,10 +773,19 @@ function spawnAlienSprites() {
     aliens.push(alien);
 }
 
+function spawnMoneySprite(){
+  var pickup = new Money();
+  pickup.reset();
+  pickups.push(pickup);
+}
+
 function update(elapsedTime){
   updatePlayer();
   updateBricks();
   updateAliens();
+  updatePickups();
+  context.fillStyle = "white";
+  context.fillText("Money Left:" + playerMoney, 20, 20);
   cage.update();
   cage.draw();
 }
@@ -822,6 +873,53 @@ function makeAlien(type) {
 };
 makeAlien.prototype = Object.create(Vector.prototype);
 
+function Money() {
+  this.type = "money";
+  this.width = 16;
+  this.height = 16;
+  this.sheet  = new SpriteSheet("images/spritesheets/money.png", this.width, this.height);
+  this.anim  = new Animation(this.sheet, 5, 0, 3);
+  this.dy        = 0;
+  this.dx        = 0;
+  this.timeSpawned = lastFrameTimeMs;
+
+  Vector.call(this, 0, 0, this.dx, this.dy);
+
+  this.update = function() {
+    this.advance();
+    this.anim.update();
+  };
+
+  this.draw = function() {
+    this.anim.draw(this.x, this.y);
+  };
+
+  this.reset = function() {
+    var decision = rand(1,4);
+    if(decision < 2)
+    {
+      this.y = topSide;
+      this.x = rand(leftSide, alienRightLimit );
+    }
+    else if(decision < 3)
+    {
+      this.y = alienBottomLimit;
+      this.x = rand(leftSide, alienRightLimit);
+    }
+    else if(decision < 4)
+    {
+      this.y = rand(topSide, alienBottomLimit);
+      this.x = leftSide;
+    }
+    else
+    {
+      this.y = rand(topSide, alienBottomLimit);
+      this.x = alienRightLimit;
+    }
+  };
+};
+Money.prototype = Object.create(Vector.prototype);
+
 function Cage() {
   this.width  = 64;
   this.height = 64;
@@ -834,9 +932,7 @@ function Cage() {
   Vector.call(this, 0, 0, this.dx, this.dy);
 
   this.update = function() {
-
     this.advance();
-
     this.anim.update();
   };
 
