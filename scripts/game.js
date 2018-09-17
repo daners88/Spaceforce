@@ -91,9 +91,9 @@ Vector.prototype.advance = function() {
       lastXBuildPixel = this.x;
     }
   }
-  if((this.type != 'mc' && this.x > alienRightLimit) || (this.type == 'mc' && this.x > rightSide))
+  if((this.type != 'mc' && this.type != "money" && this.x > alienRightLimit) || (this.type == 'mc' && this.x > rightSide))
   {
-    if(this.type != 'mc')
+    if(this.type != 'mc' && this.type != "money")
     {
       this.x = alienRightLimit;
       if(this.clockwise)
@@ -117,10 +117,10 @@ Vector.prototype.advance = function() {
       }
     }
   }
-  else if((this.type != 'mc' && this.x < alienLeftLimit) || this.x < leftSide)
+  else if((this.type != 'mc' && this.type != "money" && this.x < alienLeftLimit) || this.x < leftSide)
   {
 
-    if(this.type != 'mc')
+    if(this.type != 'mc' && this.type != "money")
     {
       this.x = alienLeftLimit;
       if(this.clockwise)
@@ -153,9 +153,9 @@ Vector.prototype.advance = function() {
       lastYBuildPixel = this.y;
     }
   }
-  if((this.type != 'mc' && this.y > alienBottomLimit) || (this.type == 'mc' &&this.y > bottomSide))
+  if((this.type != 'mc' && this.type != "money" && this.y > alienBottomLimit) || (this.type == 'mc' &&this.y > bottomSide))
   {
-    if(this.type != 'mc')
+    if(this.type != 'mc' && this.type != "money")
     {
       this.y = alienBottomLimit;
       if(this.clockwise)
@@ -179,9 +179,9 @@ Vector.prototype.advance = function() {
       }
     }
   }
-  else if((this.type != 'mc' && this.y < alienTopLimit) || this.y < topSide)
+  else if((this.type != 'mc' && this.type != "money" && this.y < alienTopLimit) || this.y < topSide)
   {
-    if(this.type != 'mc')
+    if(this.type != 'mc' && this.type != "money")
     {
       this.y = alienTopLimit;
       if(this.clockwise)
@@ -898,23 +898,23 @@ function Money() {
     var decision = rand(1,4);
     if(decision < 2)
     {
-      this.y = topSide;
-      this.x = rand(leftSide, alienRightLimit );
+      this.y = topSide + 7;
+      this.x = rand(leftSide, alienRightLimit + 15);
     }
     else if(decision < 3)
     {
-      this.y = alienBottomLimit;
-      this.x = rand(leftSide, alienRightLimit);
+      this.y = alienBottomLimit  + brickH;
+      this.x = rand(leftSide, alienRightLimit + 15);
     }
     else if(decision < 4)
     {
-      this.y = rand(topSide, alienBottomLimit);
-      this.x = leftSide;
+      this.y = rand(topSide, alienBottomLimit + brickH);
+      this.x = leftSide + 7;
     }
     else
     {
-      this.y = rand(topSide, alienBottomLimit);
-      this.x = alienRightLimit;
+      this.y = rand(topSide, alienBottomLimit + brickH);
+      this.x = alienRightLimit + 15;
     }
   };
 };
