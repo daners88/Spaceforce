@@ -10,7 +10,7 @@ var lastTimeMoneySpawned = 0;
 var lastTimeAlienSpawned = 0;
 var lastFrameTimeMs = 0;
 var timeTotalMs = 0;
-var player, cage, background, assetLoader, KEY_CODES, KEY_STATUS;
+var player, cage, sparkle, background, assetLoader, KEY_CODES, KEY_STATUS;
 var bricks = [], aliens = [], pickups = [];
 var brickL = 38;
 var brickH = 19;
@@ -94,9 +94,9 @@ Vector.prototype.advance = function() {
       lastXBuildPixel = this.x;
     }
   }
-  if((this.type != 'mc' && this.type != "money" && this.x > alienRightLimit) || (this.type == 'mc' && this.x > rightSide))
+  if((this.type != 'sparkle' && this.type != 'mc' && this.type != "money" && this.x > alienRightLimit) || (this.type == 'mc' && this.x > rightSide))
   {
-    if(this.type != 'mc' && this.type != "money")
+    if(this.type != 'sparkle' && this.type != 'mc' && this.type != "money")
     {
       this.x = alienRightLimit;
       if(this.clockwise)
@@ -120,10 +120,10 @@ Vector.prototype.advance = function() {
       }
     }
   }
-  else if((this.type != 'mc' && this.type != "money" && this.x < alienLeftLimit) || this.x < leftSide)
+  else if((this.type != 'sparkle' && this.type != 'mc' && this.type != "money" && this.x < alienLeftLimit) || this.x < leftSide)
   {
 
-    if(this.type != 'mc' && this.type != "money")
+    if(this.type != 'sparkle' && this.type != 'mc' && this.type != "money")
     {
       this.x = alienLeftLimit;
       if(this.clockwise)
@@ -156,9 +156,9 @@ Vector.prototype.advance = function() {
       lastYBuildPixel = this.y;
     }
   }
-  if((this.type != 'mc' && this.type != "money" && this.y > alienBottomLimit) || (this.type == 'mc' && this.y > bottomSide))
+  if((this.type != 'sparkle' && this.type != 'mc' && this.type != "money" && this.y > alienBottomLimit) || (this.type == 'mc' && this.y > bottomSide))
   {
-    if(this.type != 'mc' && this.type != "money")
+    if(this.type != 'sparkle' && this.type != 'mc' && this.type != "money")
     {
       this.y = alienBottomLimit;
       if(this.clockwise)
@@ -182,9 +182,9 @@ Vector.prototype.advance = function() {
       }
     }
   }
-  else if((this.type != 'mc' && this.type != "money" && this.y < alienTopLimit) || (this.type != "money" && this.y < topSide))
+  else if((this.type != 'sparkle' && this.type != 'mc' && this.type != "money" && this.y < alienTopLimit) || (this.type != 'sparkle' && this.type != "money" && this.y < topSide))
   {
-    if(this.type != 'mc' && this.type != "money")
+    if(this.type != 'sparkle' && this.type != 'mc' && this.type != "money")
     {
       this.y = alienTopLimit;
       if(this.clockwise)
@@ -816,6 +816,9 @@ function drawUI(){
     secondPickup.draw();
     thirdPickup.update();
     thirdPickup.draw();
+    sparkle.x = 216 + Math.round((lastFrameTimeMs / (levelOneTotalTime/4)) * 134) - 32;
+    sparkle.update();
+    sparkle.draw();
   }
   else if(!droppedSecondPickup)
   {
@@ -829,6 +832,9 @@ function drawUI(){
     secondPickup.draw();
     thirdPickup.update();
     thirdPickup.draw();
+    sparkle.x = 366 + Math.round(((lastFrameTimeMs-6000) / (levelOneTotalTime/4)) * 134) - 32;
+    sparkle.update();
+    sparkle.draw();
   }
   else if(!droppedThirdPickup)
   {
@@ -839,6 +845,9 @@ function drawUI(){
     context.fillRect(516,4,Math.round(((lastFrameTimeMs-12000) / (levelOneTotalTime/4)) * 134),16);
     thirdPickup.update();
     thirdPickup.draw();
+    sparkle.x = 516 + Math.round(((lastFrameTimeMs-12000) / (levelOneTotalTime/4)) * 134) - 32;
+    sparkle.update();
+    sparkle.draw();
   }
   else
   {
@@ -846,6 +855,9 @@ function drawUI(){
     context.fillRect(666, 4, 134, 16);
     context.fillStyle = "black";
     context.fillRect(666,4,Math.round(((lastFrameTimeMs-18000) / (levelOneTotalTime/4)) * 134),16);
+    sparkle.x = 666 + Math.round(((lastFrameTimeMs-18000) / (levelOneTotalTime/4)) * 134) - 32;
+    sparkle.update();
+    sparkle.draw();
   }
 }
 
@@ -971,7 +983,9 @@ function Money() {
   this.width = 16;
   this.height = 16;
   this.sheet  = new SpriteSheet("images/spritesheets/money.png", this.width, this.height);
-  this.anim  = new Animation(this.sheet, 5, 0, 3);
+  this.normAnim  = new Animation(this.sheet, 5, 0, 3);
+  this.sideSheet = new SpriteSheet("images/spritesheets/moneySide.png", this.width, this.height);
+  this.sideAnim  = new Animation(this.sideSheet, 5, 0, 3);
   this.dy        = 0;
   this.dx        = 0;
   this.timeSpawned = lastFrameTimeMs;
@@ -993,25 +1007,57 @@ function Money() {
     {
       this.y = topSide + 12;
       this.x = rand(leftSide + 100, alienRightLimit - 100);
+      this.anim = this.normAnim;
     }
     else if(decision < 3)
     {
       this.y = alienBottomLimit  + brickH;
       this.x = rand(leftSide + 100, alienRightLimit - 100);
+      this.anim = this.normAnim;
     }
     else if(decision < 4)
     {
       this.y = rand(topSide + 100, alienBottomLimit - 100);
       this.x = leftSide + 7;
+      this.anim = this.sideAnim;
     }
     else
     {
       this.y = rand(topSide + 100, alienBottomLimit - 100);
       this.x = alienRightLimit + 15;
+      this.anim = this.sideAnim;
     }
   };
 };
 Money.prototype = Object.create(Vector.prototype);
+
+function Sparkle() {
+  this.width  = 64;
+  this.height = 64;
+  this.type = 'sparkle';
+  this.sheet  = new SpriteSheet("images/spritesheets/sparkle.png", this.width, this.height);
+  this.anim  = new Animation(this.sheet, 5, 0, 5);
+
+  this.dy        = 0;
+  this.dx        = 0;
+
+  Vector.call(this, 0, 0, this.dx, this.dy);
+
+  this.update = function() {
+    this.advance();
+    this.anim.update();
+  };
+
+  this.draw = function() {
+    this.anim.draw(this.x, this.y);
+  };
+
+  this.reset = function() {
+    this.x = 0;
+    this.y = - 18;
+  };
+};
+Sparkle.prototype = Object.create(Vector.prototype);
 
 function Cage() {
   this.width  = 64;
@@ -1057,7 +1103,10 @@ function initialize() {
         'bBrickH'         : 'images/bBrickH.png',
         'lBrickV'         : 'images/lBrickV.png',
         'rBrickV'         : 'images/rBrickV.png',
-        'cage'          : 'images/spritesheets/cage.png'
+        'cage'          : 'images/spritesheets/cage.png',
+        'money'         : 'images/spritesheets/money.png',
+        'moneySide'     : 'images/spritesheets/moneySide.png',
+        'sparkle'       : 'images/spritesheets/sparkle.png'
       };
 
     this.sounds      = {
@@ -1447,6 +1496,9 @@ function initialize() {
 
   cage = new Cage();
   cage.reset();
+
+  sparkle = new Sparkle();
+  sparkle.reset();
 
   background = (function() {
 
