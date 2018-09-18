@@ -4,6 +4,8 @@ var context = canvas.getContext('2d');
 var spawnPoint= {x:canvas.width/2,y:canvas.height/2 - 19};
 
 //var playerName;
+var levelOneTotalTime = 24000;
+var droppedFirstPickup = false, droppedSecondPickup = false, droppedThirdPickup = false, firstPickup, secondPickup, thirdPickup;
 var lastTimeMoneySpawned = 0;
 var lastTimeAlienSpawned = 0;
 var lastFrameTimeMs = 0;
@@ -17,6 +19,7 @@ var alienTopLimit = 73, alienRightLimit = 850, alienLeftLimit = 110, alienBottom
 var currentLevel = 1, lastXBuildPixel = 0, lastYBuildPixel = 0, pixelThreshhold = 38;
 var playerMoney = 1140000;
 const brickCost = 3000;
+var score = 0;
 
 var canUseLocalStorage = 'localStorage' in window && window.localStorage !== null;
 
@@ -153,7 +156,7 @@ Vector.prototype.advance = function() {
       lastYBuildPixel = this.y;
     }
   }
-  if((this.type != 'mc' && this.type != "money" && this.y > alienBottomLimit) || (this.type == 'mc' &&this.y > bottomSide))
+  if((this.type != 'mc' && this.type != "money" && this.y > alienBottomLimit) || (this.type == 'mc' && this.y > bottomSide))
   {
     if(this.type != 'mc' && this.type != "money")
     {
@@ -179,7 +182,7 @@ Vector.prototype.advance = function() {
       }
     }
   }
-  else if((this.type != 'mc' && this.type != "money" && this.y < alienTopLimit) || this.y < topSide)
+  else if((this.type != 'mc' && this.type != "money" && this.y < alienTopLimit) || (this.type != "money" && this.y < topSide))
   {
     if(this.type != 'mc' && this.type != "money")
     {
@@ -528,7 +531,7 @@ function updatePickups()
 {
   for(var i = 0; i < pickups.length; i++)
   {
-    if(lastFrameTimeMs - pickups[i].timeSpawned <= 10000)
+    if(lastFrameTimeMs - pickups[i].timeSpawned <= levelOneTotalTime / 4)
     {
       if(pickups[i].minDist(player) <= pickups[i].width)
       {
@@ -559,10 +562,22 @@ function spawnSprites() {
     spawnAlienSprites();
     lastTimeAlienSpawned = lastFrameTimeMs;
   }
-  if(lastFrameTimeMs - lastTimeMoneySpawned >= 10000)
+  if(lastFrameTimeMs - lastTimeMoneySpawned >= levelOneTotalTime / 4)
   {
     spawnMoneySprite();
     lastTimeMoneySpawned = lastFrameTimeMs;
+    if(!droppedFirstPickup)
+    {
+      droppedFirstPickup = true;
+    }
+    else if(!droppedSecondPickup)
+    {
+      droppedSecondPickup = true;
+    }
+    else
+    {
+      droppedThirdPickup = true;
+    }
   }
 }
 
@@ -779,20 +794,105 @@ function spawnMoneySprite(){
   pickups.push(pickup);
 }
 
+function drawUI(){
+  cage.update();
+  cage.draw();
+  context.fillStyle = "white";
+  context.fillText("Money Left: $" + playerMoney, 20, 20);
+  context.fillStyle = "green";
+  context.fillRect(20,30,Math.round((playerMoney / 1140000) * 160),20);
+  if(!droppedFirstPickup)
+  {
+    context.fillStyle = "white";
+    context.fillRect(216, 4, 134, 16);
+    context.fillRect(366, 4, 134, 16);
+    context.fillRect(516, 4, 134, 16);
+    context.fillRect(666, 4, 134, 16);
+    context.fillStyle = "black";
+    context.fillRect(216,4,Math.round((lastFrameTimeMs / (levelOneTotalTime/4)) * 134),16);
+    firstPickup.update();
+    firstPickup.draw();
+    secondPickup.update();
+    secondPickup.draw();
+    thirdPickup.update();
+    thirdPickup.draw();
+  }
+  else if(!droppedSecondPickup)
+  {
+    context.fillStyle = "white";
+    context.fillRect(366, 4, 134, 16);
+    context.fillRect(516, 4, 134, 16);
+    context.fillRect(666, 4, 134, 16);
+    context.fillStyle = "black";
+    context.fillRect(366,4,Math.round(((lastFrameTimeMs-6000) / (levelOneTotalTime/4)) * 134),16);
+    secondPickup.update();
+    secondPickup.draw();
+    thirdPickup.update();
+    thirdPickup.draw();
+  }
+  else if(!droppedThirdPickup)
+  {
+    context.fillStyle = "white";
+    context.fillRect(516, 4, 134, 16);
+    context.fillRect(666, 4, 134, 16);
+    context.fillStyle = "black";
+    context.fillRect(516,4,Math.round(((lastFrameTimeMs-12000) / (levelOneTotalTime/4)) * 134),16);
+    thirdPickup.update();
+    thirdPickup.draw();
+  }
+  else
+  {
+    context.fillStyle = "white";
+    context.fillRect(666, 4, 134, 16);
+    context.fillStyle = "black";
+    context.fillRect(666,4,Math.round(((lastFrameTimeMs-18000) / (levelOneTotalTime/4)) * 134),16);
+  }
+}
+
 function update(elapsedTime){
   updatePlayer();
   updateBricks();
   updateAliens();
   updatePickups();
-  context.fillStyle = "white";
-  context.fillText("Money Left:" + playerMoney, 20, 20);
-  cage.update();
-  cage.draw();
+  drawUI();
+}
+
+function getPoints()
+{
+  for(var i = 0; i < aliens.length; i++)
+  {
+    if(aliens[i].x > alienLeftLimit && aliens[i].x < alienRightLimit && aliens[i].y > alienTopLimit && aliens[i].y < alienBottomLimit)
+    {
+      context.fillStyle = "white";
+      if(aliens[i].type == 'greenAlien')
+      {
+        context.fillText("250", aliens[i].x, aliens[i].y + 5);
+        score += 250;
+      }
+      else if(aliens[i].type == 'redAlien')
+      {
+        context.fillText("500", aliens[i].x, aliens[i].y + 5);
+        score += 500;
+      }
+      else
+      {
+        context.fillText("750", aliens[i].x, aliens[i].y + 5);
+        score += 750;
+      }
+    }
+  }
+  $('#score').html(score/2);
+  $('#game-over').show();
 }
 
 function gameloop(timestamp) {
   var elapsedTime = timestamp - lastFrameTimeMs
   lastFrameTimeMs = timestamp;
+
+  if(lastFrameTimeMs >= levelOneTotalTime)
+  {
+    stop = true;
+  }
   if (!stop) {
     requestAnimationFrame(gameloop);
     context.clearRect(0, 0, canvas.width, canvas.height);
@@ -801,30 +901,23 @@ function gameloop(timestamp) {
 
     update(elapsedTime);
     spawnSprites();
-
-//    context.fillText('Score: ' + score, canvas.width - 140, 30);
-
-//     if (timer > 5000) {
-//       timer = 0;
-//
-// //spawn aliens at certain times
-//     }
-//
-//     timer++;
+  }
+  else
+  {
+    getPoints();
   }
 }
 
 function mainMenu() {
-
   $('#progress').hide();
   $('#main').show();
   $('#menu').addClass('main');
-//  $('.sound').show();
 }
 
 function makeAlien(type) {
   this.width  = 32;
   this.height = 32;
+  this.type = type;
   if(type == 'greenAlien')
   {
       this.sheet  = new SpriteSheet("images/spritesheets/alien1.png", this.width, this.height);
@@ -898,22 +991,22 @@ function Money() {
     var decision = rand(1,4);
     if(decision < 2)
     {
-      this.y = topSide + 7;
-      this.x = rand(leftSide, alienRightLimit + 15);
+      this.y = topSide + 12;
+      this.x = rand(leftSide + 100, alienRightLimit - 100);
     }
     else if(decision < 3)
     {
       this.y = alienBottomLimit  + brickH;
-      this.x = rand(leftSide, alienRightLimit + 15);
+      this.x = rand(leftSide + 100, alienRightLimit - 100);
     }
     else if(decision < 4)
     {
-      this.y = rand(topSide, alienBottomLimit + brickH);
+      this.y = rand(topSide + 100, alienBottomLimit - 100);
       this.x = leftSide + 7;
     }
     else
     {
-      this.y = rand(topSide, alienBottomLimit + brickH);
+      this.y = rand(topSide + 100, alienBottomLimit - 100);
       this.x = alienRightLimit + 15;
     }
   };
@@ -1336,6 +1429,22 @@ function initialize() {
     return player;
   })(Object.create(Vector.prototype));
 
+  firstPickup = new Money();
+  firstPickup.reset();
+  firstPickup.x = 350;
+  firstPickup.y = 5;
+
+  secondPickup = new Money();
+  secondPickup.reset();
+  secondPickup.x = 500;
+  secondPickup.y = 5;
+
+  thirdPickup = new Money();
+  thirdPickup.reset();
+  thirdPickup.x = 650;
+  thirdPickup.y = 5;
+
+
   cage = new Cage();
   cage.reset();
 
@@ -1407,7 +1516,7 @@ function initialize() {
 
 function loseLife() {
   stop = true;
-  //$('#score').html(score);
+  $('#score').html(score);
   $('#game-over').show();
   assetLoader.sounds.backGroundSound.pause();
   assetLoader.sounds.die.currentTime = 0;
