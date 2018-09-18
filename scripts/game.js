@@ -1,7 +1,7 @@
 (function ($) {
 var canvas = document.getElementById('myCanvas');
 var context = canvas.getContext('2d');
-var spawnPoint= {x:canvas.width/2,y:canvas.height/2 - 19};
+var spawnPoint= {x:canvas.width/2,y:canvas.height/2 + 106};
 
 //var playerName;
 var levelOneTotalTime = 24000;
@@ -14,12 +14,11 @@ var player, cage, sparkle, background, assetLoader, KEY_CODES, KEY_STATUS;
 var bricks = [], aliens = [], pickups = [];
 var brickL = 38;
 var brickH = 19;
-var topSide = 50, bottomSide = 500, rightSide = 842, leftSide = 90, leftLimiter = 110, topLimiter = 65;
-var alienTopLimit = 73, alienRightLimit = 850, alienLeftLimit = 110, alienBottomLimit = 507;
-var currentLevel = 1, lastXBuildPixel = 0, lastYBuildPixel = 0, pixelThreshhold = 38;
+var topSide = 300, bottomSide = 750, rightSide = 842, leftSide = 90, leftLimiter = 110, topLimiter = 315;
+var alienTopLimit = 323, alienRightLimit = 850, alienLeftLimit = 110, alienBottomLimit = 757;
+var currentLevel = 1, lastXBuildPixel = 0, lastYBuildPixel = topSide, pixelThreshhold = 38;
 var playerMoney = 1140000;
 const brickCost = 3000;
-var score = 0;
 
 var canUseLocalStorage = 'localStorage' in window && window.localStorage !== null;
 
@@ -150,7 +149,7 @@ Vector.prototype.advance = function() {
   this.y += this.dy;
   if(this.type == 'mc')
   {
-    if(Math.abs(this.y - lastYBuildPixel) >= pixelThreshhold)
+    if(Math.abs(this.y - lastYBuildPixel) >= (pixelThreshhold*2))
     {
       player.canBuild = true;
       lastYBuildPixel = this.y;
@@ -301,9 +300,10 @@ function Sprite(x, y, w, h, type) {
 }
 Sprite.prototype = Object.create(Vector.prototype);
 
-function getRandomDirection(num)
+function getRandomDirection(num, type, setNum)
 {
   // 1/8 chance to remain same direction
+  var newNum = 0;
   var multiplier = rand(1, 8);
   if(num > 0)
   {
@@ -319,7 +319,39 @@ function getRandomDirection(num)
       multiplier = 1;
     }
   }
-  var newNum = rand(1, 2) * multiplier;
+  if(type == 'greenAlien')
+  {
+    if(setNum)
+    {
+      newNum = 2 * multiplier;
+    }
+    else
+    {
+      newNum = rand(0, 2) * multiplier;
+    }
+  }
+  else if(type == 'redAlien')
+  {
+    if(setNum)
+    {
+      newNum = 3 * multiplier;
+    }
+    else
+    {
+      newNum = rand(0, 3) * multiplier;
+    }
+  }
+  else
+  {
+    if(setNum)
+    {
+      newNum = multiplier;
+    }
+    else
+    {
+      newNum = rand(0, 1) * multiplier;
+    }
+  }
   return newNum;
 }
 
@@ -366,7 +398,7 @@ function buildBricks(){
       }
       for(var j = 0; j < bricksInRange.length; j++)
       {
-        if(bricksInRange[j].layer < lowestLayer + 4)
+        if(bricksInRange[j].layer < lowestLayer + 3)
         {
           if(playerMoney >= brickCost)
           {
@@ -394,7 +426,7 @@ function buildBricks(){
       }
       for(var j = 0; j < bricksInRange.length; j++)
       {
-        if(bricksInRange[j].layer < lowestLayer + 4)
+        if(bricksInRange[j].layer < lowestLayer + 3)
         {
           if(playerMoney >= brickCost)
           {
@@ -427,7 +459,7 @@ function buildBricks(){
       }
       for(var j = 0; j < bricksInRange.length; j++)
       {
-        if(bricksInRange[j].layer < lowestLayer + 4)
+        if(bricksInRange[j].layer < lowestLayer + 3)
         {
           if(playerMoney >= brickCost)
           {
@@ -455,7 +487,7 @@ function buildBricks(){
       }
       for(var j = 0; j < bricksInRange.length; j++)
       {
-        if(bricksInRange[j].layer < lowestLayer + 4)
+        if(bricksInRange[j].layer < lowestLayer + 3)
         {
           if(playerMoney >= brickCost)
           {
@@ -495,32 +527,47 @@ function updateAliens() {
         if(!aliens[i].escaped && bricks[j].visible && aliens[i].minDist(bricks[j]) <= aliens[i].width - brickH/2)
         {
           bricks[j].visible = false;
-          if(bricks[j].type == 'lBrickV')
+          var decider = rand(1,2);
+          if(bricks[j].type == 'lBrickV' || bricks[j].type == 'rBrickV')
           {
-            aliens[i].dy = getRandomDirection(aliens[i].dy);
-            //aliens[i].dx = aliens[i].dx > 0 ? aliens[i].dx : -aliens[i].dx;
-            aliens[i].dx = getRandomDirection(aliens[i].dx);
+            if(decider < 2)
+            {
+              aliens[i].dy = getRandomDirection(aliens[i].dy, aliens[i].type, false);
+              aliens[i].dx = getRandomDirection(aliens[i].dx, aliens[i].type, true);
+            }
+            else
+            {
+              aliens[i].dy = getRandomDirection(aliens[i].dy, aliens[i].type, true);
+              aliens[i].dx = getRandomDirection(aliens[i].dx, aliens[i].type, false);
+            }
           }
-          else if(bricks[j].type == 'rBrickV')
+          else
           {
-            aliens[i].dy = getRandomDirection(aliens[i].dy);
-            //aliens[i].dx = aliens[i].dx > 0 ? -aliens[i].dx : aliens[i].dx;
-            aliens[i].dx = getRandomDirection(aliens[i].dx);
-          }
-          else if(bricks[j].type == 'tBrickH')
-          {
-            aliens[i].dx = getRandomDirection(aliens[i].dx);
-            //aliens[i].dy = aliens[i].dy > 0 ? aliens[i].dy : -aliens[i].dy;
-            aliens[i].dy = getRandomDirection(aliens[i].dy);
-          }
-          else if(bricks[j].type == 'bBrickH')
-          {
-            aliens[i].dx = getRandomDirection(aliens[i].dx);
-            //aliens[i].dy = aliens[i].dy > 0 ? -aliens[i].dy : aliens[i].dy;
-            aliens[i].dy = getRandomDirection(aliens[i].dy);
+            if(decider < 2)
+            {
+              aliens[i].dx = getRandomDirection(aliens[i].dx, aliens[i].type, false);
+              aliens[i].dy = getRandomDirection(aliens[i].dy, aliens[i].type, true);
+            }
+            else
+            {
+              aliens[i].dx = getRandomDirection(aliens[i].dx, aliens[i].type, true);
+              aliens[i].dy = getRandomDirection(aliens[i].dy, aliens[i].type, false);
+            }
           }
         }
       }
+    }
+    if(lastFrameTimeMs - aliens[i].touchedPlayerAt > 1500 && aliens[i].escaped && aliens[i].minDist(player) <= aliens[i].width)
+    {
+      if(playerMoney - 30000 < 0)
+      {
+        playerMoney = 0;
+      }
+      else
+      {
+        playerMoney -= 30000;
+      }
+      aliens[i].touchedPlayerAt = lastFrameTimeMs;
     }
     aliens[i].update();
     aliens[i].draw();
@@ -536,7 +583,8 @@ function updatePickups()
       if(pickups[i].minDist(player) <= pickups[i].width)
       {
         pickups[i].timeSpawned = 0;
-        playerMoney = 1140000;
+        playerMoney += 1140000;
+        assetLoader.sounds.money.play();
       }
       else
       {
@@ -583,7 +631,7 @@ function spawnSprites() {
 
 function spawnBrickSprites() {
   //brick spawn starts for top, bottom, right, left, designated by layer number
-  var tX1 = 810, tY1 = 106, bX1 = 791, bY1 = 486, rX1 = 830, rY1 = 467, lX1 = 147, lY1 = 448;
+  var tX1 = 810, tY1 = 356, bX1 = 791, bY1 = 736, rX1 = 830, rY1 = 717, lX1 = 147, lY1 = 698;
   var tX2 = tX1 - 19, tY2 = tY1 + 19, bX2 = bX1 - 19, bY2 = bY1 - 19, rX2 = rX1 - 19, rY2 = rY1 - 19, lX2 = lX1 + 19, lY2 = lY1 - 19;
   var tX3 = tX2 - 19, tY3 = tY2 + 19, bX3 = bX2 - 19, bY3 = bY2 - 19, rX3 = rX2 - 19, rY3 = rY2 - 19, lX3 = lX2 + 19, lY3 = lY2 - 19;
   var tX4 = tX3 - 19, tY4 = tY3 + 19, bX4 = bX3 - 19, bY4 = bY3 - 19, rX4 = rX3 - 19, rY4 = rY3 - 19, lX4 = lX3 + 19, lY4 = lY3 - 19;
@@ -878,22 +926,22 @@ function getPoints()
       context.fillStyle = "white";
       if(aliens[i].type == 'greenAlien')
       {
-        context.fillText("250", aliens[i].x, aliens[i].y + 5);
-        score += 250;
+        context.fillText("$50000", aliens[i].x, aliens[i].y + 5);
+        playerMoney += 50000;
       }
       else if(aliens[i].type == 'redAlien')
       {
-        context.fillText("500", aliens[i].x, aliens[i].y + 5);
-        score += 500;
+        context.fillText("$75000", aliens[i].x, aliens[i].y + 5);
+        playerMoney += 75000;
       }
       else
       {
-        context.fillText("750", aliens[i].x, aliens[i].y + 5);
-        score += 750;
+        context.fillText("$25000", aliens[i].x, aliens[i].y + 5);
+        playerMoney += 25000;
       }
     }
   }
-  $('#score').html(score/2);
+  $('#score').html(playerMoney/2);
   $('#game-over').show();
 }
 
@@ -930,30 +978,64 @@ function makeAlien(type) {
   this.width  = 32;
   this.height = 32;
   this.type = type;
+  this.touchedPlayerAt = 0;
+  this.multiplierx = Math.random() > 0.5 ? 1 : -1;
+  this.multipliery = Math.random() > 0.5 ? 1 : -1;
+  var decider = rand(1,2);
   if(type == 'greenAlien')
   {
       this.sheet  = new SpriteSheet("images/spritesheets/alien1.png", this.width, this.height);
       this.walkAnim  = new Animation(this.sheet, 5, 0, 9);
       assetLoader.sounds.greenSpawn.play();
+
+      if(decider < 2)
+      {
+        this.dy        = 2 * this.multipliery;
+        this.dx        = rand(0, 2) * this.multiplierx;
+      }
+      else
+      {
+        this.dx        = 2 * this.multiplierx;
+        this.dy        = rand(0, 2) * this.multipliery;
+      }
   }
   else if(type == 'redAlien')
   {
       this.sheet  = new SpriteSheet("images/spritesheets/alien2.png", this.width, this.height);
       this.walkAnim  = new Animation(this.sheet, 5, 0, 4);
       assetLoader.sounds.redSpawn.play();
+
+      if(decider < 2)
+      {
+        this.dy        = 3 * this.multipliery;
+        this.dx        = rand(0, 3) * this.multiplierx;
+      }
+      else
+      {
+        this.dx        = 3 * this.multiplierx;
+        this.dy        = rand(0, 3) * this.multipliery;
+      }
   }
   else
   {
       this.sheet  = new SpriteSheet("images/spritesheets/alien3.png", this.width, this.height);
       this.walkAnim  = new Animation(this.sheet, 5, 0, 3);
       assetLoader.sounds.blueSpawn.play();
+
+      if(decider < 2)
+      {
+        this.dy        = this.multipliery;
+        this.dx        = rand(0, 1) * this.multiplierx;
+      }
+      else
+      {
+        this.dx        = this.multiplierx;
+        this.dy        = rand(0, 1) * this.multipliery;
+      }
   }
 
   this.anim = this.walkAnim;
-  this.multiplierx = Math.random() > 0.5 ? 1 : -1;
-  this.multipliery = Math.random() > 0.5 ? 1 : -1;
-  this.dy        = rand(1, 2) * this.multipliery;
-  this.dx        = rand(1, 2) * this.multiplierx;
+
   this.speed      = rand(1, 2);
   this.clockwise = rand(0, 1) > 0 ? false : true;
   this.escaped = false;
@@ -1060,8 +1142,8 @@ function Sparkle() {
 Sparkle.prototype = Object.create(Vector.prototype);
 
 function Cage() {
-  this.width  = 64;
-  this.height = 64;
+  this.width  = 56;
+  this.height = 56;
   this.sheet  = new SpriteSheet("images/spritesheets/cage.png", this.width, this.height);
   this.anim  = new Animation(this.sheet, 5, 0, 3);
 
@@ -1482,16 +1564,19 @@ function initialize() {
   firstPickup.reset();
   firstPickup.x = 350;
   firstPickup.y = 5;
+  firstPickup.anim = firstPickup.normAnim;
 
   secondPickup = new Money();
   secondPickup.reset();
   secondPickup.x = 500;
   secondPickup.y = 5;
+  secondPickup.anim = secondPickup.normAnim;
 
   thirdPickup = new Money();
   thirdPickup.reset();
   thirdPickup.x = 650;
   thirdPickup.y = 5;
+  thirdPickup.anim = thirdPickup.normAnim;
 
 
   cage = new Cage();
@@ -1503,7 +1588,7 @@ function initialize() {
   background = (function() {
 
     this.draw = function() {
-      context.drawImage(assetLoader.imgs.bg, 0, 0, 950, 625);
+      context.drawImage(assetLoader.imgs.bg, 0, 0, 950, 950);
     };
 
     return {
@@ -1568,7 +1653,7 @@ function initialize() {
 
 function loseLife() {
   stop = true;
-  $('#score').html(score);
+  $('#score').html(playerMoney);
   $('#game-over').show();
   assetLoader.sounds.backGroundSound.pause();
   assetLoader.sounds.die.currentTime = 0;
