@@ -17,9 +17,10 @@ var brickH = 19;
 var topSide = 300, bottomSide = 750, rightSide = 842, leftSide = 90, leftLimiter = 110, topLimiter = 315;
 var alienTopLimit = 323, alienRightLimit = 850, alienLeftLimit = 110, alienBottomLimit = 757;
 var currentLevel = 1, lastXBuildPixel = 0, lastYBuildPixel = topSide, pixelThreshhold = 38;
-var playerMoney = 1140000;
+var playerScore = 0, playerMoney = 1140000;
 const brickCost = 3000;
 var justOnce = false;
+var doneCounting = false, getScore = false, gameOver = false;
 
 var canUseLocalStorage = 'localStorage' in window && window.localStorage !== null;
 
@@ -83,6 +84,54 @@ function Vector(x, y, dx, dy) {
   this.dy = dy || 0;
 }
 
+Vector.prototype.sendBack = function() {
+  if(this.y != spawnPoint.y || this.x != spawnPoint.x)
+  {
+    if(this.y == spawnPoint.y)
+    {
+      this.dy = 0;
+    }
+    else if(this.y > spawnPoint.y)
+    {
+      this.dy = -1;
+    }
+    else
+    {
+      this.dy = 1;
+    }
+    if(this.x == spawnPoint.x)
+    {
+      this.dx = 0;
+    }
+    else if(this.x > spawnPoint.x)
+    {
+      this.dx = -1;
+    }
+    else
+    {
+      this.dx = 1;
+    }
+    this.x += this.dx;
+    this.y += this.dy;
+    if(Math.abs(this.y - spawnPoint.y) < 4)
+    {
+      this.y = spawnPoint.y;
+      this.dy = 0;
+    }
+    if(Math.abs(this.x - spawnPoint.x) < 4)
+    {
+      this.x = spawnPoint.x;
+      this.dx = 0;
+    }
+  }
+  else
+  {
+    this.escaped = false;
+    this.sendingBack = false;
+    this.reset();
+  }
+};
+
 Vector.prototype.advance = function() {
   var passingValue;
   this.x += this.dx;
@@ -94,9 +143,9 @@ Vector.prototype.advance = function() {
       lastXBuildPixel = this.x;
     }
   }
-  if((this.type != 'sparkle' && this.type != 'mc' && this.type != "money" && this.x > alienRightLimit) || (this.type == 'mc' && this.x > rightSide))
+  if((this.type != 'sparkle' && this.type != 'mc' && this.type != "pickup" && this.x > alienRightLimit) || (this.type == 'mc' && this.x > rightSide))
   {
-    if(this.type != 'sparkle' && this.type != 'mc' && this.type != "money")
+    if(this.type != 'sparkle' && this.type != 'mc' && this.type != "pickup")
     {
       this.x = alienRightLimit;
       if(this.clockwise)
@@ -120,10 +169,10 @@ Vector.prototype.advance = function() {
       }
     }
   }
-  else if((this.type != 'sparkle' && this.type != 'mc' && this.type != "money" && this.x < alienLeftLimit) || this.x < leftSide)
+  else if((this.type != 'sparkle' && this.type != 'mc' && this.type != "pickup" && this.x < alienLeftLimit) || this.x < leftSide)
   {
 
-    if(this.type != 'sparkle' && this.type != 'mc' && this.type != "money")
+    if(this.type != 'sparkle' && this.type != 'mc' && this.type != "pickup")
     {
       this.x = alienLeftLimit;
       if(this.clockwise)
@@ -156,9 +205,9 @@ Vector.prototype.advance = function() {
       lastYBuildPixel = this.y;
     }
   }
-  if((this.type != 'sparkle' && this.type != 'mc' && this.type != "money" && this.y > alienBottomLimit) || (this.type == 'mc' && this.y > bottomSide))
+  if((this.type != 'sparkle' && this.type != 'mc' && this.type != "pickup" && this.y > alienBottomLimit) || (this.type == 'mc' && this.y > bottomSide))
   {
-    if(this.type != 'sparkle' && this.type != 'mc' && this.type != "money")
+    if(this.type != 'sparkle' && this.type != 'mc' && this.type != "pickup")
     {
       this.y = alienBottomLimit;
       if(this.clockwise)
@@ -182,9 +231,9 @@ Vector.prototype.advance = function() {
       }
     }
   }
-  else if((this.type != 'sparkle' && this.type != 'mc' && this.type != "money" && this.y < alienTopLimit) || (this.type != 'sparkle' && this.type != "money" && this.y < topSide))
+  else if((this.type != 'sparkle' && this.type != 'mc' && this.type != "pickup" && this.y < alienTopLimit) || (this.type != 'sparkle' && this.type != "pickup" && this.y < topSide))
   {
-    if(this.type != 'sparkle' && this.type != 'mc' && this.type != "money")
+    if(this.type != 'sparkle' && this.type != 'mc' && this.type != "pickup")
     {
       this.y = alienTopLimit;
       if(this.clockwise)
@@ -401,11 +450,8 @@ function buildBricks(){
       {
         if(bricksInRange[j].layer < lowestLayer + 3)
         {
-          if(playerMoney >= brickCost)
-          {
-            bricksInRange[j].visible = true;
-            playerMoney -= brickCost;
-          }
+          bricksInRange[j].visible = true;
+          playerMoney -= brickCost;
         }
       }
     }
@@ -429,11 +475,8 @@ function buildBricks(){
       {
         if(bricksInRange[j].layer < lowestLayer + 3)
         {
-          if(playerMoney >= brickCost)
-          {
-            bricksInRange[j].visible = true;
-            playerMoney -= brickCost;
-          }
+          bricksInRange[j].visible = true;
+          playerMoney -= brickCost;
         }
       }
     }
@@ -462,11 +505,8 @@ function buildBricks(){
       {
         if(bricksInRange[j].layer < lowestLayer + 3)
         {
-          if(playerMoney >= brickCost)
-          {
-            bricksInRange[j].visible = true;
-            playerMoney -= brickCost;
-          }
+          bricksInRange[j].visible = true;
+          playerMoney -= brickCost;
         }
       }
     }
@@ -490,11 +530,8 @@ function buildBricks(){
       {
         if(bricksInRange[j].layer < lowestLayer + 3)
         {
-          if(playerMoney >= brickCost)
-          {
-            bricksInRange[j].visible = true;
-            playerMoney -= brickCost;
-          }
+          bricksInRange[j].visible = true;
+          playerMoney -= brickCost;
         }
       }
     }
@@ -510,7 +547,7 @@ function updateBricks() {
           bricks[i].draw();
     }
   }
-  if(!player.isJumping && !player.isStanding && player.canBuild)
+  if(!player.isJumping && !player.isStanding && player.canBuild && !player.isPoweredUp)
   {
     buildBricks();
   }
@@ -518,14 +555,14 @@ function updateBricks() {
 
 function updateAliens() {
   for (var i = 0; i < aliens.length; i++) {
-    if(aliens[i].y <= alienTopLimit || aliens[i].y >= alienBottomLimit || aliens[i].x >= alienRightLimit || aliens[i].x <= alienLeftLimit)
+    if(!aliens[i].sendingBack && (aliens[i].y <= alienTopLimit || aliens[i].y >= alienBottomLimit || aliens[i].x >= alienRightLimit || aliens[i].x <= alienLeftLimit))
     {
       aliens[i].escaped = true;
     }
     else
     {
       for(var j = 0; j < bricks.length; j++){
-        if(!aliens[i].escaped && bricks[j].visible && aliens[i].minDist(bricks[j]) <= aliens[i].width - brickH/2)
+        if(!aliens[i].sendingBack && !aliens[i].escaped && bricks[j].visible && aliens[i].minDist(bricks[j]) <= aliens[i].width - brickH/2)
         {
           bricks[j].visible = false;
           var decider = rand(1,2);
@@ -558,27 +595,35 @@ function updateAliens() {
         }
       }
     }
-    if(lastFrameTimeMs - aliens[i].touchedPlayerAt > 1500 && aliens[i].escaped && aliens[i].minDist(player) <= aliens[i].width)
+    if(!aliens[i].sendingBack && lastFrameTimeMs - aliens[i].touchedPlayerAt > 1500 && aliens[i].escaped && aliens[i].minDist(player) <= aliens[i].width)
     {
-      if(playerMoney - 300000 < 0)
+      if(!player.isPoweredUp && !gameOver)
       {
-        playerMoney = 0;
+        if(playerMoney - 300000 < 0)
+        {
+          playerMoney = 0;
+        }
+        else
+        {
+          playerMoney -= 300000;
+        }
+        aliens[i].touchedPlayerAt = lastFrameTimeMs;
+        assetLoader.sounds.damage.play();
       }
       else
       {
-        playerMoney -= 300000;
+        aliens[i].sendingBack = true;
       }
-      aliens[i].touchedPlayerAt = lastFrameTimeMs;
     }
     var rangeStart, rangeEnd;
-    if(lastFrameTimeMs - aliens[i].touchedPlayerAt > 1500 && aliens[i].escaped && player.isJumping && !aliens[i].jumpedOver && ((aliens[i].y == alienTopLimit && player.y <= topSide) || (aliens[i].y == alienBottomLimit && player.y >= bottomSide)))
+    if(!aliens[i].sendingBack && lastFrameTimeMs - aliens[i].touchedPlayerAt > 1500 && aliens[i].escaped && player.isJumping && !aliens[i].jumpedOver && ((aliens[i].y == alienTopLimit && player.y <= topSide) || (aliens[i].y == alienBottomLimit && player.y >= bottomSide)))
     {
       rangeStart = player.x;
       rangeEnd = player.x + 32;
       if(aliens[i].x > rangeStart && aliens[i].x < rangeEnd)
       {
         aliens[i].jumpedOver = true;
-        assetLoader.sounds.money.play();
+        assetLoader.sounds.jumpOver.play();
         if(aliens[i].type == 'greenAlien')
         {
           playerMoney += 10000
@@ -593,7 +638,7 @@ function updateAliens() {
         }
       }
     }
-    else if(lastFrameTimeMs - aliens[i].touchedPlayerAt > 1500 && aliens[i].escaped && player.isJumping && !aliens[i].jumpedOver && ((aliens[i].x == alienLeftLimit && player.x <= leftSide) || (aliens[i].x == alienRightLimit && player.x >= rightSide)))
+    else if(!aliens[i].sendingBack && lastFrameTimeMs - aliens[i].touchedPlayerAt > 1500 && aliens[i].escaped && player.isJumping && !aliens[i].jumpedOver && ((aliens[i].x == alienLeftLimit && player.x <= leftSide) || (aliens[i].x == alienRightLimit && player.x >= rightSide)))
     {
       rangeStart = player.y;
       rangeEnd = player.y + 32;
@@ -630,8 +675,17 @@ function updatePickups()
       if(pickups[i].minDist(player) <= pickups[i].width)
       {
         pickups[i].timeSpawned = 0;
-        playerMoney += 1140000;
-        assetLoader.sounds.money.play();
+        if(pickups[i].isMoney)
+        {
+          playerMoney += 1140000;
+          assetLoader.sounds.money.play();
+        }
+        else
+        {
+          player.isPoweredUp = true;
+          player.timePoweredUp = lastFrameTimeMs;
+          assetLoader.sounds.powerUp.play();
+        }
       }
       else
       {
@@ -643,6 +697,10 @@ function updatePickups()
 }
 
 function updatePlayer() {
+  if(droppedThirdPickup && lastFrameTimeMs - player.timePoweredUp >= (levelOneTotalTime / 4))
+  {
+    player.isPoweredUp = false;
+  }
   player.update();
   player.draw();
 }
@@ -659,7 +717,7 @@ function spawnSprites() {
   }
   if(lastFrameTimeMs - lastTimeMoneySpawned >= levelOneTotalTime / 4)
   {
-    spawnMoneySprite();
+    spawnPickupSprite();
     lastTimeMoneySpawned = lastFrameTimeMs;
     if(!droppedFirstPickup)
     {
@@ -883,8 +941,20 @@ function spawnAlienSprites() {
     aliens.push(alien);
 }
 
-function spawnMoneySprite(){
-  var pickup = new Money();
+function spawnPickupSprite(){
+  var pickup;
+  if(!droppedFirstPickup)
+  {
+    pickup = new Pickup(true);
+  }
+  else if(!droppedSecondPickup)
+  {
+    pickup = new Pickup(false);
+  }
+  else
+  {
+    pickup = new Pickup(true);
+  }
   pickup.reset();
   pickups.push(pickup);
 }
@@ -913,7 +983,7 @@ function drawUI(){
     context.fillText("+", 295, 88);
   }
 
-  if(!droppedFirstPickup)
+  if(!droppedFirstPickup && !gameOver)
   {
     context.fillStyle = "white";
     context.fillRect(99, 154, 164, 32);
@@ -932,7 +1002,7 @@ function drawUI(){
     sparkle.update();
     sparkle.draw();
   }
-  else if(!droppedSecondPickup)
+  else if(!droppedSecondPickup && !gameOver)
   {
     context.fillStyle = "white";
     context.fillRect(295, 154, 164, 32);
@@ -948,7 +1018,7 @@ function drawUI(){
     sparkle.update();
     sparkle.draw();
   }
-  else if(!droppedThirdPickup)
+  else if(!droppedThirdPickup && !gameOver)
   {
     context.fillStyle = "white";
     context.fillRect(491, 154, 164, 32);
@@ -961,7 +1031,7 @@ function drawUI(){
     sparkle.update();
     sparkle.draw();
   }
-  else
+  else if(!gameOver)
   {
     context.fillStyle = "white";
     context.fillRect(687, 154, 164, 32);
@@ -973,12 +1043,32 @@ function drawUI(){
   }
 }
 
+function countMoney()
+{
+  if(playerMoney - 1000 >= 0)
+  {
+    playerMoney -= 1000;
+    playerScore += 1000;
+  }
+  else
+  {
+    playerScore += playerMoney;
+    playerMoney = 0;
+    doneCounting = true;
+  }
+  assetLoader.sounds.calcScore.play();
+}
+
 function update(elapsedTime){
   updatePlayer();
   updateBricks();
   updateAliens();
   updatePickups();
   drawUI();
+  if(getScore)
+  {
+    countMoney();
+  }
 }
 
 function getPoints()
@@ -986,26 +1076,27 @@ function getPoints()
   if(!justOnce)
   {
     justOnce = true;
+    assetLoader.sounds.endLevel.play();
     for(var i = 0; i < aliens.length; i++)
     {
       if(aliens[i].x > alienLeftLimit && aliens[i].x < alienRightLimit && aliens[i].y > alienTopLimit && aliens[i].y < alienBottomLimit)
       {
         if(aliens[i].type == 'greenAlien')
         {
-          playerMoney += 75000;
+          playerScore += 75000;
         }
         else if(aliens[i].type == 'redAlien')
         {
-          playerMoney += 100000;
+          playerScore += 100000;
         }
         else
         {
-          playerMoney += 40000;
+          playerScore += 40000;
         }
       }
     }
     //drawUI();
-    $('#score').html(playerMoney);
+    $('#score').html(playerScore);
     $('#game-over').show();
   }
   else
@@ -1051,13 +1142,32 @@ function gameloop(timestamp) {
   }
   else
   {
+    !(gameOver)
+    {
+      gameOver = true;
+      player.canMove = false;
+      for(var i = 0; i < aliens.length; i++)
+      {
+        aliens[i].dy = 0;
+        aliens[i].dx = 0;
+      }
+      getScore = true;
+    }
+    if(!doneCounting)
+    {
+      requestAnimationFrame(gameloop);
+    }
     context.clearRect(0, 0, canvas.width, canvas.height);
-
     background.draw();
-    getPoints();
+    if(playerMoney == 0)
+    {
+      getPoints();
+    }
     update(elapsedTime);
-    getPoints();
-
+    if(playerMoney == 0)
+    {
+      getPoints();
+    }
   }
 }
 
@@ -1076,7 +1186,8 @@ function makeAlien(type) {
   this.clockwise = rand(0, 1) > 0 ? false : true;
   this.multiplierx = Math.random() > 0.5 ? 1 : -1;
   this.multipliery = Math.random() > 0.5 ? 1 : -1;
-  var decider = rand(1,2);
+  this.decider = rand(1,2);
+  this.sendingBack = false;
   if(type == 'greenAlien')
   {
       this.topSheet  = new SpriteSheet("images/spritesheets/alien1Tside.png", this.width, this.height);
@@ -1089,7 +1200,7 @@ function makeAlien(type) {
       this.rightWalkAnim  = new Animation(this.rightSheet, 5, 0, 9);
       assetLoader.sounds.greenSpawn.play();
       this.clockwise = true;//don't want to worry about flipping the eye to look the other way
-      if(decider < 2)
+      if(this.decider < 2)
       {
         this.dy        = 2 * this.multipliery;
         this.dx        = rand(0, 2) * this.multiplierx;
@@ -1112,7 +1223,7 @@ function makeAlien(type) {
       this.rightWalkAnim  = new Animation(this.rightSheet, 5, 0, 4);
       assetLoader.sounds.redSpawn.play();
 
-      if(decider < 2)
+      if(this.decider < 2)
       {
         this.dy        = 3 * this.multipliery;
         this.dx        = rand(0, 3) * this.multiplierx;
@@ -1135,7 +1246,7 @@ function makeAlien(type) {
     this.rightWalkAnim  = new Animation(this.rightSheet, 5, 0, 3);
       assetLoader.sounds.blueSpawn.play();
 
-      if(decider < 2)
+      if(this.decider < 2)
       {
         this.dy        = this.multipliery;
         this.dx        = rand(0, 1) * this.multiplierx;
@@ -1173,8 +1284,14 @@ function makeAlien(type) {
       this.anim = this.topWalkAnim;
     }
 
-    this.advance();
-
+    if(!this.sendingBack)
+    {
+          this.advance();
+    }
+    else
+    {
+      this.sendBack();
+    }
     this.anim.update();
   };
 
@@ -1185,18 +1302,71 @@ function makeAlien(type) {
   this.reset = function() {
     this.x = spawnPoint.x;
     this.y = spawnPoint.y;
+    if(type == 'greenAlien')
+    {
+        if(this.decider < 2)
+        {
+          this.dy        = 2 * this.multipliery;
+          this.dx        = rand(0, 2) * this.multiplierx;
+        }
+        else
+        {
+          this.dx        = 2 * this.multiplierx;
+          this.dy        = rand(0, 2) * this.multipliery;
+        }
+    }
+    else if(type == 'redAlien')
+    {
+        if(this.decider < 2)
+        {
+          this.dy        = 3 * this.multipliery;
+          this.dx        = rand(0, 3) * this.multiplierx;
+        }
+        else
+        {
+          this.dx        = 3 * this.multiplierx;
+          this.dy        = rand(0, 3) * this.multipliery;
+        }
+    }
+    else
+    {
+        if(this.decider < 2)
+        {
+          this.dy        = this.multipliery;
+          this.dx        = rand(0, 1) * this.multiplierx;
+        }
+        else
+        {
+          this.dx        = this.multiplierx;
+          this.dy        = rand(0, 1) * this.multipliery;
+        }
+    }
   };
 };
 makeAlien.prototype = Object.create(Vector.prototype);
 
-function Money() {
-  this.type = "money";
-  this.width = 16;
-  this.height = 16;
-  this.sheet  = new SpriteSheet("images/spritesheets/money.png", this.width, this.height);
-  this.normAnim  = new Animation(this.sheet, 5, 0, 3);
-  this.sideSheet = new SpriteSheet("images/spritesheets/moneySide.png", this.width, this.height);
-  this.sideAnim  = new Animation(this.sideSheet, 5, 0, 3);
+function Pickup(m) {
+  this.type = "pickup";
+  if(m)
+  {
+    this.isMoney = true;
+    this.width = 32;
+    this.height = 32;
+    this.sheet  = new SpriteSheet("images/spritesheets/money.png", this.width, this.height);
+    this.normAnim  = new Animation(this.sheet, 5, 0, 3);
+    this.sideSheet = new SpriteSheet("images/spritesheets/moneySide.png", this.width, this.height);
+    this.sideAnim  = new Animation(this.sideSheet, 5, 0, 3);
+  }
+  else
+  {
+    this.isMoney = false;
+    this.width = 64;
+    this.height = 64;
+    this.sheet  = new SpriteSheet("images/spritesheets/CokeFizzTest.png", this.width, this.height);
+    this.normAnim  = new Animation(this.sheet, 5, 0, 5);
+    this.sideSheet = new SpriteSheet("images/spritesheets/CokeFizzTestSide.png", this.width, this.height);
+    this.sideAnim  = new Animation(this.sideSheet, 5, 0, 5);
+  }
   this.dy        = 0;
   this.dx        = 0;
   this.timeSpawned = lastFrameTimeMs;
@@ -1216,31 +1386,67 @@ function Money() {
     var decision = rand(1,4);
     if(decision < 2)
     {
-      this.y = topSide + 12;
-      this.x = rand(leftSide + 100, alienRightLimit - 100);
-      this.anim = this.normAnim;
+      if(this.isMoney)
+      {
+        this.y = topSide + 12;
+        this.x = rand(leftSide + 100, alienRightLimit - 100);
+        this.anim = this.normAnim;
+      }
+      else
+      {
+        this.y = topSide - 4;
+        this.x = rand(leftSide + 100, alienRightLimit - 100);
+        this.anim = this.normAnim;
+      }
     }
     else if(decision < 3)
     {
-      this.y = alienBottomLimit  + brickH;
-      this.x = rand(leftSide + 100, alienRightLimit - 100);
-      this.anim = this.normAnim;
+      if(this.isMoney)
+      {
+        this.y = alienBottomLimit + brickH;
+        this.x = rand(leftSide + 100, alienRightLimit - 100);
+        this.anim = this.normAnim;
+      }
+      else
+      {
+        this.y = alienBottomLimit + 3;
+        this.x = rand(leftSide + 100, alienRightLimit - 100);
+        this.anim = this.normAnim;
+      }
     }
     else if(decision < 4)
     {
-      this.y = rand(topSide + 100, alienBottomLimit - 100);
-      this.x = leftSide + 7;
-      this.anim = this.sideAnim;
+      if(this.isMoney)
+      {
+        this.y = rand(topSide + 100, alienBottomLimit - 100);
+        this.x = leftSide + 7;
+        this.anim = this.sideAnim;
+      }
+      else
+      {
+        this.y = rand(topSide + 100, alienBottomLimit - 100);
+        this.x = leftSide;
+        this.anim = this.sideAnim;
+      }
     }
     else
     {
-      this.y = rand(topSide + 100, alienBottomLimit - 100);
-      this.x = alienRightLimit + 15;
-      this.anim = this.sideAnim;
+      if(this.isMoney)
+      {
+        this.y = rand(topSide + 100, alienBottomLimit - 100);
+        this.x = alienRightLimit + 15;
+        this.anim = this.sideAnim;
+      }
+      else
+      {
+        this.y = rand(topSide + 100, alienBottomLimit - 100);
+        this.x = alienRightLimit - 1;
+        this.anim = this.sideAnim;
+      }
     }
   };
 };
-Money.prototype = Object.create(Vector.prototype);
+Pickup.prototype = Object.create(Vector.prototype);
 
 function Sparkle() {
   this.width  = 64;
@@ -1314,7 +1520,14 @@ function initialize() {
       'money'     : 'sounds/money.wav',
       'greenSpawn'        : 'sounds/greenSpawn.wav',
       'redSpawn'        : 'sounds/redSpawn.wav',
-      'blueSpawn'        : 'sounds/blueSpawn.wav'
+      'blueSpawn'        : 'sounds/blueSpawn.wav',
+      'coin'          : 'sounds/coin.wav',
+      'jumpOver'    : 'sounds/jumpOver.wav',
+      'endLevel'    : 'sounds/endLevel.wav',
+      'makeMoney'   : 'sounds/makeMoney.wav',
+      'powerUp'     : 'sounds/powerUp.wav',
+      'calcScore'     : 'sounds/calcScore.wav',
+      'damage'      : 'sounds/damage.mp3'
     };
 
     var assetsLoaded = 0;                                // how many assets have been loaded
@@ -1420,6 +1633,8 @@ function initialize() {
     player.onBottom = false;
     player.onRight = false;
     player.canBuild = true;
+    player.canMove  = true;
+    player.timePoweredUp = 0;
 
     player.gravity   = .25;
     player.dy        = 0;
@@ -1429,6 +1644,7 @@ function initialize() {
     player.isFalling = false;
     player.isJumping = false;
     player.isStanding = false;
+    player.isPoweredUp = false;
 
     player.topWalkAnim  = new Animation(player.topSheet, 5, 0, 3);
     player.topFlipWalkAnim = new Animation(player.topFlipSheet, 5, 0, 3);
@@ -1447,11 +1663,20 @@ function initialize() {
     player.leftStandAnim = new Animation(player.leftSheet, 1, 0, 0);
     player.leftFlipStandAnim = new Animation(player.leftFlipSheet, 1, 0, 0);
 
+    player.puTopWalkAnim  = new Animation(player.topSheet, 5, 0, 4);
+    player.puTopFlipWalkAnim = new Animation(player.topFlipSheet, 5, 0, 4);
+    player.puBottomWalkAnim  = new Animation(player.bottomSheet, 5, 0, 4);
+    player.puBottomFlipWalkAnim  = new Animation(player.bottomFlipSheet, 5, 0, 4);
+    player.puRightWalkAnim = new Animation(player.rightSheet, 5, 0, 4);
+    player.puRightFlipWalkAnim = new Animation(player.rightFlipSheet, 5, 0, 4);
+    player.puLeftWalkAnim = new Animation(player.leftSheet, 5, 0, 4);
+    player.puLeftFlipWalkAnim = new Animation(player.leftFlipSheet, 5, 0, 4);
+
     Vector.call(player, 0, 0, player.dx, player.dy);
 
     player.update = function() {
 
-      if (KEY_STATUS.space && !player.isJumping) {
+      if (KEY_STATUS.space && !player.isJumping && player.canMove) {
         player.isJumping = true;
         if(player.onTop)
         {
@@ -1478,7 +1703,7 @@ function initialize() {
         document.location.href = 'index.html';
       }
 
-      if (KEY_STATUS.right && (player.y <= topLimiter|| player.y >= bottomSide))
+      if (KEY_STATUS.right && (player.y <= topLimiter|| player.y >= bottomSide) && player.canMove)
       {
         player.isStanding = false;
         player.onLeft = false;
@@ -1491,17 +1716,31 @@ function initialize() {
             player.y = topSide;
           }
           player.onBottom = false;
-          player.anim      = player.topFlipWalkAnim;
+          if(!player.isPoweredUp)
+          {
+            player.anim      = player.topFlipWalkAnim;
+          }
+          else
+          {
+            player.anim      = player.puTopFlipWalkAnim;
+          }
         }
         else {
           player.onTop = false;
           player.onBottom = true;
-          player.anim      = player.bottomWalkAnim;
+          if(!player.isPoweredUp)
+          {
+            player.anim      = player.bottomWalkAnim;
+          }
+          else
+          {
+            player.anim      = player.puBottomWalkAnim;
+          }
         }
         player.dx = player.speed;
         player.lastWalkLeft = false;
       }
-      else if(KEY_STATUS.left && (player.y <= topLimiter|| player.y >= bottomSide))
+      else if(KEY_STATUS.left && (player.y <= topLimiter|| player.y >= bottomSide) && player.canMove)
       {
         player.isStanding = false;
         player.onLeft = false;
@@ -1514,17 +1753,31 @@ function initialize() {
             player.y = topSide;
           }
           player.onBottom = false;
-          player.anim      = player.topWalkAnim;
+          if(!player.isPoweredUp)
+          {
+            player.anim      = player.topWalkAnim;
+          }
+          else
+          {
+            player.anim      = player.puTopWalkAnim;
+          }
         }
         else {
           player.onTop = false;
           player.onBottom = true;
-          player.anim      = player.bottomFlipWalkAnim;
+          if(!player.isPoweredUp)
+          {
+            player.anim      = player.bottomFlipWalkAnim;
+          }
+          else
+          {
+            player.anim      = player.puBottomFlipWalkAnim;
+          }
         }
         player.dx = -player.speed;
         player.lastWalkLeft = true;
       }
-      else if (KEY_STATUS.up && (player.x <= leftLimiter || player.x >= rightSide))
+      else if (KEY_STATUS.up && (player.x <= leftLimiter || player.x >= rightSide) && player.canMove)
       {
         player.isStanding = false;
         player.onTop = false;
@@ -1537,17 +1790,31 @@ function initialize() {
             player.x = leftSide;
           }
           player.onRight = false;
-          player.anim      = player.leftFlipWalkAnim;
+          if(!player.isPoweredUp)
+          {
+            player.anim      = player.leftFlipWalkAnim;
+          }
+          else
+          {
+            player.anim      = player.puLeftFlipWalkAnim;
+          }
         }
         else {
           player.onLeft = false;
           player.onRight = true;
-          player.anim      = player.rightWalkAnim;
+          if(!player.isPoweredUp)
+          {
+            player.anim      = player.rightWalkAnim;
+          }
+          else
+          {
+            player.anim      = player.puRightWalkAnim;
+          }
         }
         player.dy = -player.speed;
         player.lastWalkLeft = false;
       }
-      else if(KEY_STATUS.down && (player.x <= leftLimiter || player.x >= rightSide))
+      else if(KEY_STATUS.down && (player.x <= leftLimiter || player.x >= rightSide) && player.canMove)
       {
         player.isStanding = false;
         player.onTop = false;
@@ -1560,12 +1827,26 @@ function initialize() {
             player.x = leftSide;
           }
           player.onRight = false;
-          player.anim      = player.leftWalkAnim;
+          if(!player.isPoweredUp)
+          {
+            player.anim      = player.leftWalkAnim;
+          }
+          else
+          {
+            player.anim      = player.puLeftWalkAnim;
+          }
         }
         else {
           player.onLeft = false;
           player.onRight = true;
-          player.anim      = player.rightFlipWalkAnim;
+          if(!player.isPoweredUp)
+          {
+            player.anim      = player.rightFlipWalkAnim;
+          }
+          else
+          {
+            player.anim      = player.puRightFlipWalkAnim;
+          }
         }
         player.dy = player.speed;
         player.lastWalkLeft = true;
@@ -1692,19 +1973,19 @@ function initialize() {
     return player;
   })(Object.create(Vector.prototype));
 
-  firstPickup = new Money();
+  firstPickup = new Pickup(true);
   firstPickup.reset();
   firstPickup.x = 263;
   firstPickup.y = 155;
   firstPickup.anim = firstPickup.normAnim;
 
-  secondPickup = new Money();
+  secondPickup = new Pickup(false);
   secondPickup.reset();
-  secondPickup.x = 459;
-  secondPickup.y = 155;
+  secondPickup.x = 443;
+  secondPickup.y = 139;
   secondPickup.anim = secondPickup.normAnim;
 
-  thirdPickup = new Money();
+  thirdPickup = new Pickup(true);
   thirdPickup.reset();
   thirdPickup.x = 655;
   thirdPickup.y = 155;
