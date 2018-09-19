@@ -4,7 +4,7 @@ var context = canvas.getContext('2d');
 var spawnPoint= {x:canvas.width/2,y:canvas.height/2 + 106};
 
 //var playerName;
-var levelOneTotalTime = 24000;
+var levelOneTotalTime = 40000;
 var droppedFirstPickup = false, droppedSecondPickup = false, droppedThirdPickup = false, firstPickup, secondPickup, thirdPickup;
 var lastTimeMoneySpawned = 0;
 var lastTimeAlienSpawned = 0;
@@ -19,6 +19,7 @@ var alienTopLimit = 323, alienRightLimit = 850, alienLeftLimit = 110, alienBotto
 var currentLevel = 1, lastXBuildPixel = 0, lastYBuildPixel = topSide, pixelThreshhold = 38;
 var playerMoney = 1140000;
 const brickCost = 3000;
+var justOnce = false;
 
 var canUseLocalStorage = 'localStorage' in window && window.localStorage !== null;
 
@@ -559,16 +560,62 @@ function updateAliens() {
     }
     if(lastFrameTimeMs - aliens[i].touchedPlayerAt > 1500 && aliens[i].escaped && aliens[i].minDist(player) <= aliens[i].width)
     {
-      if(playerMoney - 30000 < 0)
+      if(playerMoney - 300000 < 0)
       {
         playerMoney = 0;
       }
       else
       {
-        playerMoney -= 30000;
+        playerMoney -= 300000;
       }
       aliens[i].touchedPlayerAt = lastFrameTimeMs;
     }
+    var rangeStart, rangeEnd;
+    if(lastFrameTimeMs - aliens[i].touchedPlayerAt > 1500 && aliens[i].escaped && player.isJumping && !aliens[i].jumpedOver && ((aliens[i].y == alienTopLimit && player.y <= topSide) || (aliens[i].y == alienBottomLimit && player.y >= bottomSide)))
+    {
+      rangeStart = player.x;
+      rangeEnd = player.x + 32;
+      if(aliens[i].x > rangeStart && aliens[i].x < rangeEnd)
+      {
+        aliens[i].jumpedOver = true;
+        assetLoader.sounds.money.play();
+        if(aliens[i].type == 'greenAlien')
+        {
+          playerMoney += 10000
+        }
+        else if(aliens[i].type == 'redAlien')
+        {
+          playerMoney += 20000
+        }
+        else
+        {
+          playerMoney += 30000
+        }
+      }
+    }
+    else if(lastFrameTimeMs - aliens[i].touchedPlayerAt > 1500 && aliens[i].escaped && player.isJumping && !aliens[i].jumpedOver && ((aliens[i].x == alienLeftLimit && player.x <= leftSide) || (aliens[i].x == alienRightLimit && player.x >= rightSide)))
+    {
+      rangeStart = player.y;
+      rangeEnd = player.y + 32;
+      if(aliens[i].y > rangeStart && aliens[i].y < rangeEnd)
+      {
+        aliens[i].jumpedOver = true;
+        assetLoader.sounds.money.play();
+        if(aliens[i].type == 'greenAlien')
+        {
+          playerMoney += 20000
+        }
+        else if(aliens[i].type == 'redAlien')
+        {
+          playerMoney += 50000
+        }
+        else
+        {
+          playerMoney += 100000
+        }
+      }
+    }
+
     aliens[i].update();
     aliens[i].draw();
   }
@@ -605,7 +652,7 @@ function spawnSprites() {
   {
       spawnBrickSprites();
   }
-  if(lastFrameTimeMs - lastTimeAlienSpawned >= 3500)
+  if(lastFrameTimeMs - lastTimeAlienSpawned >= 3000)
   {
     spawnAlienSprites();
     lastTimeAlienSpawned = lastFrameTimeMs;
@@ -846,64 +893,81 @@ function drawUI(){
   cage.update();
   cage.draw();
   context.fillStyle = "white";
-  context.fillText("Money Left: $" + playerMoney, 20, 20);
+  context.font="25px Georgia";
+  context.fillText("Money Left: $" + playerMoney, 20, 60);
+  context.beginPath();
+  context.lineWidth="6";
+  context.strokeStyle = "white";
+  context.rect(0,0, canvas.width/3, 150);
+  context.rect(canvas.width/3,0, (canvas.width/3 * 2), 150);
+  context.stroke();
   context.fillStyle = "green";
-  context.fillRect(20,30,Math.round((playerMoney / 1140000) * 160),20);
+  if(playerMoney <= 1140000)
+  {
+    context.fillRect(20,70,Math.round((playerMoney / 1140000) * 275),20);
+  }
+  else
+  {
+    context.fillRect(20,70,275,20);
+    context.fillStyle = "white";
+    context.fillText("+", 295, 88);
+  }
+
   if(!droppedFirstPickup)
   {
     context.fillStyle = "white";
-    context.fillRect(216, 4, 134, 16);
-    context.fillRect(366, 4, 134, 16);
-    context.fillRect(516, 4, 134, 16);
-    context.fillRect(666, 4, 134, 16);
+    context.fillRect(99, 154, 164, 32);
+    context.fillRect(295, 154, 164, 32);
+    context.fillRect(491, 154, 164, 32);
+    context.fillRect(687, 154, 164, 32);
     context.fillStyle = "black";
-    context.fillRect(216,4,Math.round((lastFrameTimeMs / (levelOneTotalTime/4)) * 134),16);
+    context.fillRect(99,154,Math.round((lastFrameTimeMs / (levelOneTotalTime/4)) * 164),32);
     firstPickup.update();
     firstPickup.draw();
     secondPickup.update();
     secondPickup.draw();
     thirdPickup.update();
     thirdPickup.draw();
-    sparkle.x = 216 + Math.round((lastFrameTimeMs / (levelOneTotalTime/4)) * 134) - 32;
+    sparkle.x = 99 + Math.round((lastFrameTimeMs / (levelOneTotalTime/4)) * 164) - 32;
     sparkle.update();
     sparkle.draw();
   }
   else if(!droppedSecondPickup)
   {
     context.fillStyle = "white";
-    context.fillRect(366, 4, 134, 16);
-    context.fillRect(516, 4, 134, 16);
-    context.fillRect(666, 4, 134, 16);
+    context.fillRect(295, 154, 164, 32);
+    context.fillRect(491, 154, 164, 32);
+    context.fillRect(687, 154, 164, 32);
     context.fillStyle = "black";
-    context.fillRect(366,4,Math.round(((lastFrameTimeMs-6000) / (levelOneTotalTime/4)) * 134),16);
+    context.fillRect(295,154,Math.round(((lastFrameTimeMs-10000) / (levelOneTotalTime/4)) * 164),32);
     secondPickup.update();
     secondPickup.draw();
     thirdPickup.update();
     thirdPickup.draw();
-    sparkle.x = 366 + Math.round(((lastFrameTimeMs-6000) / (levelOneTotalTime/4)) * 134) - 32;
+    sparkle.x = 295 + Math.round(((lastFrameTimeMs-10000) / (levelOneTotalTime/4)) * 164) - 32;
     sparkle.update();
     sparkle.draw();
   }
   else if(!droppedThirdPickup)
   {
     context.fillStyle = "white";
-    context.fillRect(516, 4, 134, 16);
-    context.fillRect(666, 4, 134, 16);
+    context.fillRect(491, 154, 164, 32);
+    context.fillRect(687, 154, 164, 32);
     context.fillStyle = "black";
-    context.fillRect(516,4,Math.round(((lastFrameTimeMs-12000) / (levelOneTotalTime/4)) * 134),16);
+    context.fillRect(491,154,Math.round(((lastFrameTimeMs-20000) / (levelOneTotalTime/4)) * 164),32);
     thirdPickup.update();
     thirdPickup.draw();
-    sparkle.x = 516 + Math.round(((lastFrameTimeMs-12000) / (levelOneTotalTime/4)) * 134) - 32;
+    sparkle.x = 491 + Math.round(((lastFrameTimeMs-20000) / (levelOneTotalTime/4)) * 164) - 32;
     sparkle.update();
     sparkle.draw();
   }
   else
   {
     context.fillStyle = "white";
-    context.fillRect(666, 4, 134, 16);
+    context.fillRect(687, 154, 164, 32);
     context.fillStyle = "black";
-    context.fillRect(666,4,Math.round(((lastFrameTimeMs-18000) / (levelOneTotalTime/4)) * 134),16);
-    sparkle.x = 666 + Math.round(((lastFrameTimeMs-18000) / (levelOneTotalTime/4)) * 134) - 32;
+    context.fillRect(687,154,Math.round(((lastFrameTimeMs-30000) / (levelOneTotalTime/4)) * 164),32);
+    sparkle.x = 687 + Math.round(((lastFrameTimeMs-30000) / (levelOneTotalTime/4)) * 164) - 32;
     sparkle.update();
     sparkle.draw();
   }
@@ -919,37 +983,60 @@ function update(elapsedTime){
 
 function getPoints()
 {
-  for(var i = 0; i < aliens.length; i++)
+  if(!justOnce)
   {
-    if(aliens[i].x > alienLeftLimit && aliens[i].x < alienRightLimit && aliens[i].y > alienTopLimit && aliens[i].y < alienBottomLimit)
+    justOnce = true;
+    for(var i = 0; i < aliens.length; i++)
     {
-      context.fillStyle = "white";
-      if(aliens[i].type == 'greenAlien')
+      if(aliens[i].x > alienLeftLimit && aliens[i].x < alienRightLimit && aliens[i].y > alienTopLimit && aliens[i].y < alienBottomLimit)
       {
-        context.fillText("$50000", aliens[i].x, aliens[i].y + 5);
-        playerMoney += 50000;
+        if(aliens[i].type == 'greenAlien')
+        {
+          playerMoney += 75000;
+        }
+        else if(aliens[i].type == 'redAlien')
+        {
+          playerMoney += 100000;
+        }
+        else
+        {
+          playerMoney += 40000;
+        }
       }
-      else if(aliens[i].type == 'redAlien')
+    }
+    //drawUI();
+    $('#score').html(playerMoney);
+    $('#game-over').show();
+  }
+  else
+  {
+    for(var i = 0; i < aliens.length; i++)
+    {
+      if(aliens[i].x > alienLeftLimit && aliens[i].x < alienRightLimit && aliens[i].y > alienTopLimit && aliens[i].y < alienBottomLimit)
       {
-        context.fillText("$75000", aliens[i].x, aliens[i].y + 5);
-        playerMoney += 75000;
-      }
-      else
-      {
-        context.fillText("$25000", aliens[i].x, aliens[i].y + 5);
-        playerMoney += 25000;
+        context.fillStyle = "white";
+        if(aliens[i].type == 'greenAlien')
+        {
+          context.fillText("$75000", aliens[i].x, aliens[i].y + 5);
+        }
+        else if(aliens[i].type == 'redAlien')
+        {
+          context.fillText("$100000", aliens[i].x, aliens[i].y + 5);
+        }
+        else
+        {
+          context.fillText("$40000", aliens[i].x, aliens[i].y + 5);
+        }
       }
     }
   }
-  $('#score').html(playerMoney/2);
-  $('#game-over').show();
 }
 
 function gameloop(timestamp) {
   var elapsedTime = timestamp - lastFrameTimeMs
   lastFrameTimeMs = timestamp;
 
-  if(lastFrameTimeMs >= levelOneTotalTime)
+  if(lastFrameTimeMs >= levelOneTotalTime || playerMoney == 0)
   {
     stop = true;
   }
@@ -964,7 +1051,13 @@ function gameloop(timestamp) {
   }
   else
   {
+    context.clearRect(0, 0, canvas.width, canvas.height);
+
+    background.draw();
     getPoints();
+    update(elapsedTime);
+    getPoints();
+
   }
 }
 
@@ -978,16 +1071,24 @@ function makeAlien(type) {
   this.width  = 32;
   this.height = 32;
   this.type = type;
+  this.jumpedOver = false;
   this.touchedPlayerAt = 0;
+  this.clockwise = rand(0, 1) > 0 ? false : true;
   this.multiplierx = Math.random() > 0.5 ? 1 : -1;
   this.multipliery = Math.random() > 0.5 ? 1 : -1;
   var decider = rand(1,2);
   if(type == 'greenAlien')
   {
-      this.sheet  = new SpriteSheet("images/spritesheets/alien1.png", this.width, this.height);
-      this.walkAnim  = new Animation(this.sheet, 5, 0, 9);
+      this.topSheet  = new SpriteSheet("images/spritesheets/alien1Tside.png", this.width, this.height);
+      this.topWalkAnim  = new Animation(this.topSheet, 5, 0, 9);
+      this.bottomSheet  = new SpriteSheet("images/spritesheets/alien1Bside.png", this.width, this.height);
+      this.bottomWalkAnim  = new Animation(this.bottomSheet, 5, 0, 9);
+      this.leftSheet  = new SpriteSheet("images/spritesheets/alien1Lside.png", this.width, this.height);
+      this.leftWalkAnim  = new Animation(this.leftSheet, 5, 0, 9);
+      this.rightSheet  = new SpriteSheet("images/spritesheets/alien1Rside.png", this.width, this.height);
+      this.rightWalkAnim  = new Animation(this.rightSheet, 5, 0, 9);
       assetLoader.sounds.greenSpawn.play();
-
+      this.clockwise = true;//don't want to worry about flipping the eye to look the other way
       if(decider < 2)
       {
         this.dy        = 2 * this.multipliery;
@@ -1001,8 +1102,14 @@ function makeAlien(type) {
   }
   else if(type == 'redAlien')
   {
-      this.sheet  = new SpriteSheet("images/spritesheets/alien2.png", this.width, this.height);
-      this.walkAnim  = new Animation(this.sheet, 5, 0, 4);
+      this.topSheet  = new SpriteSheet("images/spritesheets/alien2Tside.png", this.width, this.height);
+      this.topWalkAnim  = new Animation(this.topSheet, 5, 0, 4);
+      this.bottomSheet  = new SpriteSheet("images/spritesheets/alien2Bside.png", this.width, this.height);
+      this.bottomWalkAnim  = new Animation(this.bottomSheet, 5, 0, 4);
+      this.leftSheet  = new SpriteSheet("images/spritesheets/alien2Lside.png", this.width, this.height);
+      this.leftWalkAnim  = new Animation(this.leftSheet, 5, 0, 4);
+      this.rightSheet  = new SpriteSheet("images/spritesheets/alien2Rside.png", this.width, this.height);
+      this.rightWalkAnim  = new Animation(this.rightSheet, 5, 0, 4);
       assetLoader.sounds.redSpawn.play();
 
       if(decider < 2)
@@ -1018,8 +1125,14 @@ function makeAlien(type) {
   }
   else
   {
-      this.sheet  = new SpriteSheet("images/spritesheets/alien3.png", this.width, this.height);
-      this.walkAnim  = new Animation(this.sheet, 5, 0, 3);
+    this.topSheet  = new SpriteSheet("images/spritesheets/alien3Tside.png", this.width, this.height);
+    this.topWalkAnim  = new Animation(this.topSheet, 5, 0, 3);
+    this.bottomSheet  = new SpriteSheet("images/spritesheets/alien3Bside.png", this.width, this.height);
+    this.bottomWalkAnim  = new Animation(this.bottomSheet, 5, 0, 3);
+    this.leftSheet  = new SpriteSheet("images/spritesheets/alien3Lside.png", this.width, this.height);
+    this.leftWalkAnim  = new Animation(this.leftSheet, 5, 0, 3);
+    this.rightSheet  = new SpriteSheet("images/spritesheets/alien3Rside.png", this.width, this.height);
+    this.rightWalkAnim  = new Animation(this.rightSheet, 5, 0, 3);
       assetLoader.sounds.blueSpawn.play();
 
       if(decider < 2)
@@ -1034,15 +1147,31 @@ function makeAlien(type) {
       }
   }
 
-  this.anim = this.walkAnim;
+  this.anim = this.topWalkAnim;
 
   this.speed      = rand(1, 2);
-  this.clockwise = rand(0, 1) > 0 ? false : true;
+
   this.escaped = false;
 
   Vector.call(this, 0, 0, this.dx, this.dy);
 
   this.update = function() {
+    if(this.y == alienBottomLimit)
+    {
+      this.anim = this.bottomWalkAnim;
+    }
+    else if(this.x == alienLeftLimit)
+    {
+      this.anim = this.leftWalkAnim;
+    }
+    else if(this.x == alienRightLimit)
+    {
+      this.anim = this.rightWalkAnim;
+    }
+    else
+    {
+      this.anim = this.topWalkAnim;
+    }
 
     this.advance();
 
@@ -1136,7 +1265,7 @@ function Sparkle() {
 
   this.reset = function() {
     this.x = 0;
-    this.y = - 18;
+    this.y = 138;
   };
 };
 Sparkle.prototype = Object.create(Vector.prototype);
@@ -1172,23 +1301,10 @@ function initialize() {
   assetLoader = (function() {
     this.imgs        = {
         "bg"            : "images/background.png",
-        "bgss"            : "images/spritesheets/backgroundSprites.png",
-        "mcTop"           : "images/spritesheets/mcTside.png",
-        "mcTflip"           : "images/spritesheets/mcTflip.png",
-        "mcBottom"           : "images/spritesheets/mcBside.png",
-        "mcRight"         : "images/spritesheets/mcRSide.png",
-        "mcLeft"         : "images/spritesheets/mcLSide.png",
-        "greenAlien"      : "images/spritesheets/alien1.png",
-        "redAlien"         : "images/spritesheets/alien2.png",
-        "blueAlien" : "images/spritesheets/alien3.png",
         'tBrickH'         : 'images/tBrickH.png',
         'bBrickH'         : 'images/bBrickH.png',
         'lBrickV'         : 'images/lBrickV.png',
         'rBrickV'         : 'images/rBrickV.png',
-        'cage'          : 'images/spritesheets/cage.png',
-        'money'         : 'images/spritesheets/money.png',
-        'moneySide'     : 'images/spritesheets/moneySide.png',
-        'sparkle'       : 'images/spritesheets/sparkle.png'
       };
 
     this.sounds      = {
@@ -1510,6 +1626,10 @@ function initialize() {
           {
             player.isFalling = false;
             player.isJumping = false;
+            for(var i = 0; i < aliens.length; i++)
+            {
+              aliens[i].jumpedOver = false;
+            }
             player.dy = 0;
           }
         }
@@ -1520,6 +1640,10 @@ function initialize() {
           {
             player.isFalling = false;
             player.isJumping = false;
+            for(var i = 0; i < aliens.length; i++)
+            {
+              aliens[i].jumpedOver = false;
+            }
             player.dx = 0;
           }
         }
@@ -1530,6 +1654,10 @@ function initialize() {
           {
             player.isFalling = false;
             player.isJumping = false;
+            for(var i = 0; i < aliens.length; i++)
+            {
+              aliens[i].jumpedOver = false;
+            }
             player.dy = 0;
           }
         }
@@ -1540,6 +1668,10 @@ function initialize() {
           {
             player.isFalling = false;
             player.isJumping = false;
+            for(var i = 0; i < aliens.length; i++)
+            {
+              aliens[i].jumpedOver = false;
+            }
             player.dx = 0;
           }
         }
@@ -1562,20 +1694,20 @@ function initialize() {
 
   firstPickup = new Money();
   firstPickup.reset();
-  firstPickup.x = 350;
-  firstPickup.y = 5;
+  firstPickup.x = 263;
+  firstPickup.y = 155;
   firstPickup.anim = firstPickup.normAnim;
 
   secondPickup = new Money();
   secondPickup.reset();
-  secondPickup.x = 500;
-  secondPickup.y = 5;
+  secondPickup.x = 459;
+  secondPickup.y = 155;
   secondPickup.anim = secondPickup.normAnim;
 
   thirdPickup = new Money();
   thirdPickup.reset();
-  thirdPickup.x = 650;
-  thirdPickup.y = 5;
+  thirdPickup.x = 655;
+  thirdPickup.y = 155;
   thirdPickup.anim = thirdPickup.normAnim;
 
 
