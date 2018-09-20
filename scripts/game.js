@@ -1054,7 +1054,7 @@ function countMoney()
   }
   else
   {
-    playerScore += playerMoney;
+    playerScore += (playerMoney >= 0 ? playerMoney : 0);
     playerMoney = 0;
     doneCounting = true;
   }
@@ -2071,6 +2071,7 @@ function initialize() {
   droppedSecondPickup = false;
   firstTime = true;
   playerMoney = 1140000;
+  playerScore = 0;
   lastTimeMoneySpawned = 0;
   lastTimeAlienSpawned = 0;
 
