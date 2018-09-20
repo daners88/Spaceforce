@@ -16,16 +16,18 @@ var brickL = 38;
 var brickH = 19;
 var topSide = 300, bottomSide = 750, rightSide = 842, leftSide = 90, leftLimiter = 110, topLimiter = 315;
 var alienTopLimit = 323, alienRightLimit = 850, alienLeftLimit = 110, alienBottomLimit = 757;
-var currentLevel = 1, lastXBuildPixel = 0, lastYBuildPixel = topSide, pixelThreshhold = 38;
+var level = 1, lastXBuildPixel = 0, lastYBuildPixel = topSide, pixelThreshhold = 38;
 var playerScore = 0, playerMoney = 1140000;
 const brickCost = 3000;
 var alienSpawnRate = 0;
 var justOnce = false;
 var doneCounting = false, getScore = false, gameOver = false;
-var firstTime = false;
+var firstTime = true;
 var startTime = 0;
 var highestScoreThisSession = 0;
 var level = 0;
+var levelSet = false;
+var levelTwoStartScore = 0;
 
 var canUseLocalStorage = 'localStorage' in window && window.localStorage !== null;
 
@@ -755,13 +757,13 @@ function spawnBrickSprites() {
   {
     bricks.push(new Sprite(tX1, tY1, brickL, brickH, 'tBrickH'));
     bricks[bricks.length - 1].layer = 1;
-    if(currentLevel < 3)
+    if(level < 3)
     {
       bricks[bricks.length - 1].visible = true;
     }
     bricks.push(new Sprite(bX1, bY1, brickL, brickH, 'bBrickH'));
     bricks[bricks.length - 1].layer = 1;
-    if(currentLevel < 2)
+    if(level < 2)
     {
       bricks[bricks.length - 1].visible = true;
     }
@@ -772,13 +774,13 @@ function spawnBrickSprites() {
   {
     bricks.push(new Sprite(rX1, rY1, brickH, brickL, 'rBrickV'));
     bricks[bricks.length - 1].layer = 1;
-    if(currentLevel < 3)
+    if(level < 3)
     {
       bricks[bricks.length - 1].visible = true;
     }
     bricks.push(new Sprite(lX1, lY1, brickH, brickL, 'lBrickV'));
     bricks[bricks.length - 1].layer = 1;
-    if(currentLevel < 2)
+    if(level < 2)
     {
       bricks[bricks.length - 1].visible = true;
     }
@@ -973,7 +975,7 @@ function drawUI(){
   context.fillText("Level " + level, 800, 60);
   context.beginPath();
   context.lineWidth="6";
-  context.strokeStyle = "white";
+  context.strokeStyle = "red";
   context.rect(0,0, canvas.width/3, 150);
   context.rect(canvas.width/3,0, (canvas.width/3 * 2), 150);
   context.stroke();
@@ -991,7 +993,7 @@ function drawUI(){
 
   if(!droppedFirstPickup && !gameOver)
   {
-    context.fillStyle = "white";
+    context.fillStyle = "blue";
     context.fillRect(99, 154, 164, 32);
     context.fillRect(295, 154, 164, 32);
     context.fillRect(491, 154, 164, 32);
@@ -1010,7 +1012,7 @@ function drawUI(){
   }
   else if(!droppedSecondPickup && !gameOver)
   {
-    context.fillStyle = "white";
+    context.fillStyle = "blue";
     context.fillRect(295, 154, 164, 32);
     context.fillRect(491, 154, 164, 32);
     context.fillRect(687, 154, 164, 32);
@@ -1026,7 +1028,7 @@ function drawUI(){
   }
   else if(!droppedThirdPickup && !gameOver)
   {
-    context.fillStyle = "white";
+    context.fillStyle = "blue";
     context.fillRect(491, 154, 164, 32);
     context.fillRect(687, 154, 164, 32);
     context.fillStyle = "black";
@@ -1039,7 +1041,7 @@ function drawUI(){
   }
   else if(!gameOver)
   {
-    context.fillStyle = "white";
+    context.fillStyle = "blue";
     context.fillRect(687, 154, 164, 32);
     context.fillStyle = "black";
     context.fillRect(687,154,Math.round(((lastFrameTimeMs-(levelTotalTime/4)*3) / (levelTotalTime/4)) * 164),32);
@@ -1107,6 +1109,7 @@ function getPoints()
     {
       highestScoreThisSession = playerScore;
     }
+    levelSet = false;
     $('#score').html(playerScore);
     $('#highest').html(highestScoreThisSession);
     $('#gOver').show();
@@ -2078,25 +2081,28 @@ function initialize() {
   droppedThirdPickup = false;
   droppedFirstPickup = false;
   droppedSecondPickup = false;
+  firstTime = true;
 
   lastTimeMoneySpawned = 0;
   lastTimeAlienSpawned = 0;
-  if(level == 1 && !firstTime){
+  if(level == 1 && !levelSet){
     level = 2;
     alienSpawnRate = 3000;
     playerMoney = playerScore;
     levelTotalTime = 44000;
+    levelSet = true;
+    levelTwoStartScore = playerScore;
   }
-  else if(!firstTime)
+  else if(!levelSet)
   {
     level = 1;
     alienSpawnRate = 3500;
     playerMoney = 1140000;
     playerScore = 0;
     levelTotalTime = 36000;
+    levelSet = true;
+    levelTwoStartScore = 0;
   }
-
-  firstTime = true;
 
   //score = 0;
   context.font = '16px arial, sans-serif';
