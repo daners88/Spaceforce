@@ -8,47 +8,40 @@
 </head>
 <body>
   <div class="wrapper">
-    <div id="menu">
+    <div id="menu" style="background-image: url(./images/controls.png); background-repeat: no-repeat; background-position: 0% 0%; background-size: 100% 100%;">
       <div id="progress">
         <div id="percent"><font color="white">Loading: <span id="p"></span></font></div>
         <progress id="progress-bar" value="0"></progress>
       </div>
-      <div id="menu">
-        <ul>
-          <li></li>
-          <li></li>
-          <li></li>
-          <li></li>
-          <li></li>
-          <li></li>
-          <li></li>
-          <li></li>
-          <li></li>
-          <li></li>
-          <li></li>
-          <li></li>
-          <li><font color="white"><strong>Use arrow keys or w-a-s-d to go up and down, left and right.</strong></font></li>
-          <li><font color="white"><strong>Use spacebar to jump</strong></font></li>
-          <li><font color="white"><strong>Now build that wall! Make Space Great Again!</strong></font></li>
-          <li></li>
-          <li id="starter"><a href="javascript:void(0)" class="button play">Start</a></li>
-          <li><a href="index.html" class="button">Main Menu</a></li>
-
-        </ul>
+      <div >
+        <br/>
+        <br/>
+        <br/>
+        <br/>
+        <input type="image" src="./images/start_button.png" class="play" />
+        <br/>
+        <br/>
+        <br/>
+        <form action="index.html">
+          <input type="image" src="./images/menu_button.png" class="mmenu" />
+        </form>
       </div>
     </div>
     <canvas id="myCanvas" width="950" height="875">
     </canvas>
-    <div id="game-over">
+    <div id="gOver">
       </br>
       </br>
       </br>
       </br>
       </br>
-      <h2><font color="white">Trump's Profit: $<span id="score"></span></font></h2>
-      <!-- <a href="javascript:void(0)" class="button restart">Try again?</a> -->
+      <h2><font id="fonty" color="white" font-family='karmatic_arcaderegular'>Trump's Profit: $<span id="score"></span></font></h2>
+      <br/>
+      <input type="image" src="./images/start_button.png" class="play restart" />
     </br>
-      <a href="index.html" class="button">Main Menu</a>
+    <form action="thanks.html">
+      <input type="image" src="./images/quit_button.png" class="mmenu" />
+    </form>
     </div>
   </div>
   <script type="text/javascript" src="scripts/game.js"></script>

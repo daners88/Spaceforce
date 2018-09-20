@@ -21,6 +21,8 @@ var playerScore = 0, playerMoney = 1140000;
 const brickCost = 3000;
 var justOnce = false;
 var doneCounting = false, getScore = false, gameOver = false;
+var firstTime = true;
+var startTime = 0;
 
 var canUseLocalStorage = 'localStorage' in window && window.localStorage !== null;
 
@@ -1073,6 +1075,7 @@ function update(elapsedTime){
 
 function getPoints()
 {
+  assetLoader.sounds.backGroundSound.pause();
   if(!justOnce)
   {
     justOnce = true;
@@ -1097,7 +1100,7 @@ function getPoints()
     }
     //drawUI();
     $('#score').html(playerScore);
-    $('#game-over').show();
+    $('#gOver').show();
   }
   else
   {
@@ -1124,10 +1127,18 @@ function getPoints()
 }
 
 function gameloop(timestamp) {
-  var elapsedTime = timestamp - lastFrameTimeMs
-  lastFrameTimeMs = timestamp;
+  if(firstTime)
+  {
+    if(timestamp != null)
+    {
+      startTime = timestamp;
+      firstTime = false;
+    }
+  }
+  var elapsedTime = timestamp - lastFrameTimeMs - startTime;
+  lastFrameTimeMs = timestamp - startTime;
 
-  if(lastFrameTimeMs >= levelOneTotalTime || playerMoney == 0)
+  if(lastFrameTimeMs >= levelOneTotalTime || playerMoney <= 0)
   {
     stop = true;
   }
@@ -1517,7 +1528,7 @@ function initialize() {
       'backGroundSound'            : 'sounds/backgroundMusic.mp3',
       'jump'          : 'sounds/playerJump.wav',
       'die'      : 'sounds/playerDeath.wav',
-      'money'     : 'sounds/money.wav',
+      'money'     : 'sounds/money.mp3',
       'greenSpawn'        : 'sounds/greenSpawn.wav',
       'redSpawn'        : 'sounds/redSpawn.wav',
       'blueSpawn'        : 'sounds/blueSpawn.wav',
@@ -2044,12 +2055,25 @@ function initialize() {
     }
   };
 
-  document.getElementById('game-over').style.display = 'none';
+  document.getElementById('gOver').style.display = 'none';
   bricks = [];
   aliens = [];
+  pickups = [];
   player.reset();
   timer = 0;
   stop = false;
+  justOnce = false;
+  doneCounting = false;
+  getScore = false;
+  gameOver = false;
+  droppedThirdPickup = false;
+  droppedFirstPickup = false;
+  droppedSecondPickup = false;
+  firstTime = true;
+  playerMoney = 1140000;
+  lastTimeMoneySpawned = 0;
+  lastTimeAlienSpawned = 0;
+
   //score = 0;
 
   context.font = '16px arial, sans-serif';
@@ -2067,7 +2091,7 @@ function initialize() {
 function loseLife() {
   stop = true;
   $('#score').html(playerMoney);
-  $('#game-over').show();
+  $('#gOver').show();
   assetLoader.sounds.backGroundSound.pause();
   assetLoader.sounds.die.currentTime = 0;
   assetLoader.sounds.die.play();
@@ -2108,10 +2132,11 @@ function loseLife() {
 
 $('.play').click(function() {
  $('#menu').hide();
+
   initialize();
 });
 $('.restart').click(function() {
-  $('#game-over').hide();
+  $('#gOver').hide();
   initialize();
 });
 
