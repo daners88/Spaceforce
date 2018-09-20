@@ -4,7 +4,7 @@ var context = canvas.getContext('2d');
 var spawnPoint= {x:canvas.width/2,y:canvas.height/2 + 106};
 
 //var playerName;
-var levelOneTotalTime = 40000;
+var levelTotalTime = 40000;
 var droppedFirstPickup = false, droppedSecondPickup = false, droppedThirdPickup = false, firstPickup, secondPickup, thirdPickup;
 var lastTimeMoneySpawned = 0;
 var lastTimeAlienSpawned = 0;
@@ -19,11 +19,13 @@ var alienTopLimit = 323, alienRightLimit = 850, alienLeftLimit = 110, alienBotto
 var currentLevel = 1, lastXBuildPixel = 0, lastYBuildPixel = topSide, pixelThreshhold = 38;
 var playerScore = 0, playerMoney = 1140000;
 const brickCost = 3000;
+var alienSpawnRate = 0;
 var justOnce = false;
 var doneCounting = false, getScore = false, gameOver = false;
-var firstTime = true;
+var firstTime = false;
 var startTime = 0;
 var highestScoreThisSession = 0;
+var level = 0;
 
 var canUseLocalStorage = 'localStorage' in window && window.localStorage !== null;
 
@@ -673,7 +675,7 @@ function updatePickups()
 {
   for(var i = 0; i < pickups.length; i++)
   {
-    if(lastFrameTimeMs - pickups[i].timeSpawned <= levelOneTotalTime / 4)
+    if(lastFrameTimeMs - pickups[i].timeSpawned <= levelTotalTime / 4)
     {
       if(pickups[i].minDist(player) <= pickups[i].width)
       {
@@ -700,7 +702,7 @@ function updatePickups()
 }
 
 function updatePlayer() {
-  if(droppedThirdPickup && lastFrameTimeMs - player.timePoweredUp >= (levelOneTotalTime / 4))
+  if(droppedThirdPickup && lastFrameTimeMs - player.timePoweredUp >= (levelTotalTime / 4))
   {
     player.isPoweredUp = false;
   }
@@ -713,12 +715,12 @@ function spawnSprites() {
   {
       spawnBrickSprites();
   }
-  if(lastFrameTimeMs - lastTimeAlienSpawned >= 3000)
+  if(lastFrameTimeMs - lastTimeAlienSpawned >= alienSpawnRate)
   {
     spawnAlienSprites();
     lastTimeAlienSpawned = lastFrameTimeMs;
   }
-  if(lastFrameTimeMs - lastTimeMoneySpawned >= levelOneTotalTime / 4)
+  if(lastFrameTimeMs - lastTimeMoneySpawned >= levelTotalTime / 4)
   {
     spawnPickupSprite();
     lastTimeMoneySpawned = lastFrameTimeMs;
@@ -968,6 +970,7 @@ function drawUI(){
   context.fillStyle = "white";
   context.font="25px Georgia";
   context.fillText("Money Left: $" + playerMoney, 20, 60);
+  context.fillText("Level " + level, 800, 60);
   context.beginPath();
   context.lineWidth="6";
   context.strokeStyle = "white";
@@ -994,14 +997,14 @@ function drawUI(){
     context.fillRect(491, 154, 164, 32);
     context.fillRect(687, 154, 164, 32);
     context.fillStyle = "black";
-    context.fillRect(99,154,Math.round((lastFrameTimeMs / (levelOneTotalTime/4)) * 164),32);
+    context.fillRect(99,154,Math.round((lastFrameTimeMs / (levelTotalTime/4)) * 164),32);
     firstPickup.update();
     firstPickup.draw();
     secondPickup.update();
     secondPickup.draw();
     thirdPickup.update();
     thirdPickup.draw();
-    sparkle.x = 99 + Math.round((lastFrameTimeMs / (levelOneTotalTime/4)) * 164) - 32;
+    sparkle.x = 99 + Math.round((lastFrameTimeMs / (levelTotalTime/4)) * 164) - 32;
     sparkle.update();
     sparkle.draw();
   }
@@ -1012,12 +1015,12 @@ function drawUI(){
     context.fillRect(491, 154, 164, 32);
     context.fillRect(687, 154, 164, 32);
     context.fillStyle = "black";
-    context.fillRect(295,154,Math.round(((lastFrameTimeMs-10000) / (levelOneTotalTime/4)) * 164),32);
+    context.fillRect(295,154,Math.round(((lastFrameTimeMs-(levelTotalTime/4)) / (levelTotalTime/4)) * 164),32);
     secondPickup.update();
     secondPickup.draw();
     thirdPickup.update();
     thirdPickup.draw();
-    sparkle.x = 295 + Math.round(((lastFrameTimeMs-10000) / (levelOneTotalTime/4)) * 164) - 32;
+    sparkle.x = 295 + Math.round(((lastFrameTimeMs-(levelTotalTime/4)) / (levelTotalTime/4)) * 164) - 32;
     sparkle.update();
     sparkle.draw();
   }
@@ -1027,10 +1030,10 @@ function drawUI(){
     context.fillRect(491, 154, 164, 32);
     context.fillRect(687, 154, 164, 32);
     context.fillStyle = "black";
-    context.fillRect(491,154,Math.round(((lastFrameTimeMs-20000) / (levelOneTotalTime/4)) * 164),32);
+    context.fillRect(491,154,Math.round(((lastFrameTimeMs-(levelTotalTime/2)) / (levelTotalTime/4)) * 164),32);
     thirdPickup.update();
     thirdPickup.draw();
-    sparkle.x = 491 + Math.round(((lastFrameTimeMs-20000) / (levelOneTotalTime/4)) * 164) - 32;
+    sparkle.x = 491 + Math.round(((lastFrameTimeMs-(levelTotalTime/2)) / (levelTotalTime/4)) * 164) - 32;
     sparkle.update();
     sparkle.draw();
   }
@@ -1039,8 +1042,8 @@ function drawUI(){
     context.fillStyle = "white";
     context.fillRect(687, 154, 164, 32);
     context.fillStyle = "black";
-    context.fillRect(687,154,Math.round(((lastFrameTimeMs-30000) / (levelOneTotalTime/4)) * 164),32);
-    sparkle.x = 687 + Math.round(((lastFrameTimeMs-30000) / (levelOneTotalTime/4)) * 164) - 32;
+    context.fillRect(687,154,Math.round(((lastFrameTimeMs-(levelTotalTime/4)*3) / (levelTotalTime/4)) * 164),32);
+    sparkle.x = 687 + Math.round(((lastFrameTimeMs-(levelTotalTime/4)*3) / (levelTotalTime/4)) * 164) - 32;
     sparkle.update();
     sparkle.draw();
   }
@@ -1100,7 +1103,7 @@ function getPoints()
       }
     }
     //drawUI();
-    if(playerScore > highestScoreThisSession)
+    if(playerScore > highestScoreThisSession && level == 2)
     {
       highestScoreThisSession = playerScore;
     }
@@ -1144,7 +1147,7 @@ function gameloop(timestamp) {
   var elapsedTime = timestamp - lastFrameTimeMs - startTime;
   lastFrameTimeMs = timestamp - startTime;
 
-  if(lastFrameTimeMs >= levelOneTotalTime || playerMoney <= 0)
+  if(lastFrameTimeMs >= levelTotalTime || playerMoney <= 0)
   {
     stop = true;
   }
@@ -2075,15 +2078,29 @@ function initialize() {
   droppedThirdPickup = false;
   droppedFirstPickup = false;
   droppedSecondPickup = false;
-  firstTime = true;
-  playerMoney = 1140000;
-  playerScore = 0;
+
   lastTimeMoneySpawned = 0;
   lastTimeAlienSpawned = 0;
+  if(level == 1 && !firstTime){
+    level = 2;
+    alienSpawnRate = 3000;
+    playerMoney = playerScore;
+    levelTotalTime = 44000;
+  }
+  else if(!firstTime)
+  {
+    level = 1;
+    alienSpawnRate = 3500;
+    playerMoney = 1140000;
+    playerScore = 0;
+    levelTotalTime = 36000;
+  }
+
+  firstTime = true;
 
   //score = 0;
-
   context.font = '16px arial, sans-serif';
+
 
   //background.reset();
 
