@@ -23,6 +23,7 @@ var justOnce = false;
 var doneCounting = false, getScore = false, gameOver = false;
 var firstTime = true;
 var startTime = 0;
+var highestScoreThisSession = 0;
 
 var canUseLocalStorage = 'localStorage' in window && window.localStorage !== null;
 
@@ -1099,7 +1100,12 @@ function getPoints()
       }
     }
     //drawUI();
+    if(playerScore > highestScoreThisSession)
+    {
+      highestScoreThisSession = playerScore;
+    }
     $('#score').html(playerScore);
+    $('#highest').html(highestScoreThisSession);
     $('#gOver').show();
   }
   else
