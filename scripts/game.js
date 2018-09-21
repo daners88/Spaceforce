@@ -4,7 +4,6 @@ var context = canvas.getContext('2d');
 var spawnPoint= {x:canvas.width/2,y:canvas.height/2 + 106};
 
 //var playerName;
-var levelTotalTime = 40000;
 var droppedFirstPickup = false, droppedSecondPickup = false, droppedThirdPickup = false, firstPickup, secondPickup, thirdPickup;
 var lastTimeMoneySpawned = 0;
 var lastTimeAlienSpawned = 0;
@@ -17,17 +16,18 @@ var brickH = 19;
 var topSide = 300, bottomSide = 750, rightSide = 842, leftSide = 90, leftLimiter = 110, topLimiter = 315;
 var alienTopLimit = 323, alienRightLimit = 850, alienLeftLimit = 110, alienBottomLimit = 757;
 var level = 1, lastXBuildPixel = 0, lastYBuildPixel = topSide, pixelThreshhold = 38;
-var playerScore = 0, playerMoney = 1140000;
+var playerScore = 0;
 const brickCost = 3000;
-var alienSpawnRate = 0;
 var justOnce = false;
 var doneCounting = false, getScore = false, gameOver = false;
 var firstTime = true;
 var startTime = 0;
 var highestScoreThisSession = 0;
-var level = 0;
+var currentLevel;
 var levelSet = false;
-var levelTwoStartScore = 0;
+var levelStartScore = 0;
+var levels = [];
+var oneTime = true;
 
 var canUseLocalStorage = 'localStorage' in window && window.localStorage !== null;
 
@@ -458,7 +458,7 @@ function buildBricks(){
         if(bricksInRange[j].layer < lowestLayer + 3)
         {
           bricksInRange[j].visible = true;
-          playerMoney -= brickCost;
+          currentLevel.playerMoney -= brickCost;
         }
       }
     }
@@ -483,7 +483,7 @@ function buildBricks(){
         if(bricksInRange[j].layer < lowestLayer + 3)
         {
           bricksInRange[j].visible = true;
-          playerMoney -= brickCost;
+          currentLevel.playerMoney -= brickCost;
         }
       }
     }
@@ -513,7 +513,7 @@ function buildBricks(){
         if(bricksInRange[j].layer < lowestLayer + 3)
         {
           bricksInRange[j].visible = true;
-          playerMoney -= brickCost;
+          currentLevel.playerMoney -= brickCost;
         }
       }
     }
@@ -538,7 +538,7 @@ function buildBricks(){
         if(bricksInRange[j].layer < lowestLayer + 3)
         {
           bricksInRange[j].visible = true;
-          playerMoney -= brickCost;
+          currentLevel.playerMoney -= brickCost;
         }
       }
     }
@@ -606,13 +606,13 @@ function updateAliens() {
     {
       if(!player.isPoweredUp && !gameOver)
       {
-        if(playerMoney - 300000 < 0)
+        if(currentLevel.playerMoney - 300000 < 0)
         {
-          playerMoney = 0;
+          currentLevel.playerMoney = 0;
         }
         else
         {
-          playerMoney -= 300000;
+          currentLevel.playerMoney -= 300000;
         }
         aliens[i].touchedPlayerAt = lastFrameTimeMs;
         assetLoader.sounds.damage.play();
@@ -633,15 +633,15 @@ function updateAliens() {
         assetLoader.sounds.jumpOver.play();
         if(aliens[i].type == 'greenAlien')
         {
-          playerMoney += 10000
+          currentLevel.playerMoney += 10000
         }
         else if(aliens[i].type == 'redAlien')
         {
-          playerMoney += 20000
+          currentLevel.playerMoney += 20000
         }
         else
         {
-          playerMoney += 30000
+          currentLevel.playerMoney += 30000
         }
       }
     }
@@ -655,15 +655,15 @@ function updateAliens() {
         assetLoader.sounds.money.play();
         if(aliens[i].type == 'greenAlien')
         {
-          playerMoney += 20000
+          currentLevel.playerMoney += 20000
         }
         else if(aliens[i].type == 'redAlien')
         {
-          playerMoney += 50000
+          currentLevel.playerMoney += 50000
         }
         else
         {
-          playerMoney += 100000
+          currentLevel.playerMoney += 100000
         }
       }
     }
@@ -677,14 +677,14 @@ function updatePickups()
 {
   for(var i = 0; i < pickups.length; i++)
   {
-    if(lastFrameTimeMs - pickups[i].timeSpawned <= levelTotalTime / 4)
+    if(lastFrameTimeMs - pickups[i].timeSpawned <= currentLevel.levelTotalTime / 4)
     {
       if(pickups[i].minDist(player) <= pickups[i].width)
       {
         pickups[i].timeSpawned = 0;
         if(pickups[i].isMoney)
         {
-          playerMoney += 1140000;
+          currentLevel.playerMoney += 1140000;
           assetLoader.sounds.money.play();
         }
         else
@@ -704,7 +704,7 @@ function updatePickups()
 }
 
 function updatePlayer() {
-  if(droppedThirdPickup && lastFrameTimeMs - player.timePoweredUp >= (levelTotalTime / 4))
+  if(droppedThirdPickup && lastFrameTimeMs - player.timePoweredUp >= (currentLevel.levelTotalTime / 4))
   {
     player.isPoweredUp = false;
   }
@@ -717,12 +717,12 @@ function spawnSprites() {
   {
       spawnBrickSprites();
   }
-  if(lastFrameTimeMs - lastTimeAlienSpawned >= alienSpawnRate)
+  if(lastFrameTimeMs - lastTimeAlienSpawned >= currentLevel.alienSpawnRate)
   {
     spawnAlienSprites();
     lastTimeAlienSpawned = lastFrameTimeMs;
   }
-  if(lastFrameTimeMs - lastTimeMoneySpawned >= levelTotalTime / 4)
+  if(lastFrameTimeMs - lastTimeMoneySpawned >= currentLevel.levelTotalTime / 4)
   {
     spawnPickupSprite();
     lastTimeMoneySpawned = lastFrameTimeMs;
@@ -757,13 +757,13 @@ function spawnBrickSprites() {
   {
     bricks.push(new Sprite(tX1, tY1, brickL, brickH, 'tBrickH'));
     bricks[bricks.length - 1].layer = 1;
-    if(level < 3)
+    if(currentLevel.level < 3)
     {
       bricks[bricks.length - 1].visible = true;
     }
     bricks.push(new Sprite(bX1, bY1, brickL, brickH, 'bBrickH'));
     bricks[bricks.length - 1].layer = 1;
-    if(level < 2)
+    if(currentLevel.level < 2)
     {
       bricks[bricks.length - 1].visible = true;
     }
@@ -774,13 +774,13 @@ function spawnBrickSprites() {
   {
     bricks.push(new Sprite(rX1, rY1, brickH, brickL, 'rBrickV'));
     bricks[bricks.length - 1].layer = 1;
-    if(level < 3)
+    if(currentLevel.level < 3)
     {
       bricks[bricks.length - 1].visible = true;
     }
     bricks.push(new Sprite(lX1, lY1, brickH, brickL, 'lBrickV'));
     bricks[bricks.length - 1].layer = 1;
-    if(level < 2)
+    if(currentLevel.level < 2)
     {
       bricks[bricks.length - 1].visible = true;
     }
@@ -971,8 +971,8 @@ function drawUI(){
   cage.draw();
   context.fillStyle = "white";
   context.font="25px Georgia";
-  context.fillText("Money Left: $" + playerMoney, 20, 60);
-  context.fillText("Level " + level, 800, 60);
+  context.fillText("Money Left: $" + currentLevel.playerMoney, 20, 60);
+  context.fillText("Level " + currentLevel.level, 800, 60);
   context.beginPath();
   context.lineWidth="6";
   context.strokeStyle = "red";
@@ -980,9 +980,9 @@ function drawUI(){
   context.rect(canvas.width/3,0, (canvas.width/3 * 2), 150);
   context.stroke();
   context.fillStyle = "green";
-  if(playerMoney <= 1140000)
+  if(currentLevel.playerMoney <= 1140000)
   {
-    context.fillRect(20,70,Math.round((playerMoney / 1140000) * 275),20);
+    context.fillRect(20,70,Math.round((currentLevel.playerMoney / 1140000) * 275),20);
   }
   else
   {
@@ -999,14 +999,14 @@ function drawUI(){
     context.fillRect(491, 154, 164, 32);
     context.fillRect(687, 154, 164, 32);
     context.fillStyle = "black";
-    context.fillRect(99,154,Math.round((lastFrameTimeMs / (levelTotalTime/4)) * 164),32);
+    context.fillRect(99,154,Math.round((lastFrameTimeMs / (currentLevel.levelTotalTime/4)) * 164),32);
     firstPickup.update();
     firstPickup.draw();
     secondPickup.update();
     secondPickup.draw();
     thirdPickup.update();
     thirdPickup.draw();
-    sparkle.x = 99 + Math.round((lastFrameTimeMs / (levelTotalTime/4)) * 164) - 32;
+    sparkle.x = 99 + Math.round((lastFrameTimeMs / (currentLevel.levelTotalTime/4)) * 164) - 32;
     sparkle.update();
     sparkle.draw();
   }
@@ -1017,12 +1017,12 @@ function drawUI(){
     context.fillRect(491, 154, 164, 32);
     context.fillRect(687, 154, 164, 32);
     context.fillStyle = "black";
-    context.fillRect(295,154,Math.round(((lastFrameTimeMs-(levelTotalTime/4)) / (levelTotalTime/4)) * 164),32);
+    context.fillRect(295,154,Math.round(((lastFrameTimeMs-(currentLevel.levelTotalTime/4)) / (currentLevel.levelTotalTime/4)) * 164),32);
     secondPickup.update();
     secondPickup.draw();
     thirdPickup.update();
     thirdPickup.draw();
-    sparkle.x = 295 + Math.round(((lastFrameTimeMs-(levelTotalTime/4)) / (levelTotalTime/4)) * 164) - 32;
+    sparkle.x = 295 + Math.round(((lastFrameTimeMs-(currentLevel.levelTotalTime/4)) / (currentLevel.levelTotalTime/4)) * 164) - 32;
     sparkle.update();
     sparkle.draw();
   }
@@ -1032,10 +1032,10 @@ function drawUI(){
     context.fillRect(491, 154, 164, 32);
     context.fillRect(687, 154, 164, 32);
     context.fillStyle = "black";
-    context.fillRect(491,154,Math.round(((lastFrameTimeMs-(levelTotalTime/2)) / (levelTotalTime/4)) * 164),32);
+    context.fillRect(491,154,Math.round(((lastFrameTimeMs-(currentLevel.levelTotalTime/2)) / (currentLevel.levelTotalTime/4)) * 164),32);
     thirdPickup.update();
     thirdPickup.draw();
-    sparkle.x = 491 + Math.round(((lastFrameTimeMs-(levelTotalTime/2)) / (levelTotalTime/4)) * 164) - 32;
+    sparkle.x = 491 + Math.round(((lastFrameTimeMs-(currentLevel.levelTotalTime/2)) / (currentLevel.levelTotalTime/4)) * 164) - 32;
     sparkle.update();
     sparkle.draw();
   }
@@ -1044,8 +1044,8 @@ function drawUI(){
     context.fillStyle = "blue";
     context.fillRect(687, 154, 164, 32);
     context.fillStyle = "black";
-    context.fillRect(687,154,Math.round(((lastFrameTimeMs-(levelTotalTime/4)*3) / (levelTotalTime/4)) * 164),32);
-    sparkle.x = 687 + Math.round(((lastFrameTimeMs-(levelTotalTime/4)*3) / (levelTotalTime/4)) * 164) - 32;
+    context.fillRect(687,154,Math.round(((lastFrameTimeMs-(currentLevel.levelTotalTime/4)*3) / (currentLevel.levelTotalTime/4)) * 164),32);
+    sparkle.x = 687 + Math.round(((lastFrameTimeMs-(currentLevel.levelTotalTime/4)*3) / (currentLevel.levelTotalTime/4)) * 164) - 32;
     sparkle.update();
     sparkle.draw();
   }
@@ -1053,15 +1053,15 @@ function drawUI(){
 
 function countMoney()
 {
-  if(playerMoney - 1000 >= 0)
+  if(currentLevel.playerMoney - 4000 >= 0)
   {
-    playerMoney -= 1000;
-    playerScore += 1000;
+    currentLevel.playerMoney -= 4000;
+    playerScore += 4000;
   }
   else
   {
-    playerScore += (playerMoney >= 0 ? playerMoney : 0);
-    playerMoney = 0;
+    playerScore += (currentLevel.playerMoney >= 0 ? currentLevel.playerMoney : 0);
+    currentLevel.playerMoney = 0;
     doneCounting = true;
   }
   assetLoader.sounds.calcScore.play();
@@ -1105,12 +1105,19 @@ function getPoints()
       }
     }
     //drawUI();
-    if(playerScore > highestScoreThisSession && level == 2)
+    if(playerScore > highestScoreThisSession)
     {
       highestScoreThisSession = playerScore;
     }
     levelSet = false;
-    $('#score').html(playerScore);
+    if(playerScore > 0 && oneTime)
+    {
+      currentLevel.playerMoney = playerScore;
+      playerScore = 0;
+      levels.push(new Level(currentLevel.level + 1, currentLevel.alienSpawnRate - 500 >= 1500 ? currentLevel.alienSpawnRate - 500 : currentLevel.alienSpawnRate, currentLevel.levelTotalTime + 4000 <= 60000 ? currentLevel.levelTotalTime + 4000 : currentLevel.levelTotalTime, currentLevel.playerMoney));
+    }
+    oneTime = false;
+    $('#score').html(currentLevel.playerMoney);
     $('#highest').html(highestScoreThisSession);
     $('#gOver').show();
   }
@@ -1149,8 +1156,13 @@ function gameloop(timestamp) {
   }
   var elapsedTime = timestamp - lastFrameTimeMs - startTime;
   lastFrameTimeMs = timestamp - startTime;
-
-  if(lastFrameTimeMs >= levelTotalTime || playerMoney <= 0)
+  if(levels.length == 1 && startTime > 0)
+  {
+    assetLoader.sounds.backGroundSound.currentTime = 0;
+    assetLoader.sounds.backGroundSound.loop = true;
+    assetLoader.sounds.backGroundSound.play();
+  }
+  if(lastFrameTimeMs >= currentLevel.levelTotalTime || currentLevel.playerMoney <= 0)
   {
     stop = true;
   }
@@ -1182,12 +1194,12 @@ function gameloop(timestamp) {
     }
     context.clearRect(0, 0, canvas.width, canvas.height);
     background.draw();
-    if(playerMoney == 0)
+    if(currentLevel.playerMoney == 0)
     {
       getPoints();
     }
     update(elapsedTime);
-    if(playerMoney == 0)
+    if(!oneTime)
     {
       getPoints();
     }
@@ -1198,6 +1210,21 @@ function mainMenu() {
   $('#progress').hide();
   $('#main').show();
   $('#menu').addClass('main');
+}
+
+function Level(level, alienSpawnRate, levelTotalTime, previousLevelScore)
+{
+  this.level = level;
+  this.alienSpawnRate = alienSpawnRate;
+  this.levelTotalTime = levelTotalTime;
+  if(level == 1)
+  {
+    this.playerMoney = 1140000;
+  }
+  else
+  {
+    this.playerMoney = previousLevelScore;
+  }
 }
 
 function makeAlien(type) {
@@ -2082,26 +2109,30 @@ function initialize() {
   droppedFirstPickup = false;
   droppedSecondPickup = false;
   firstTime = true;
+  oneTime = true;
 
   lastTimeMoneySpawned = 0;
   lastTimeAlienSpawned = 0;
-  if(level == 1 && !levelSet){
-    level = 2;
-    alienSpawnRate = 3000;
-    playerMoney = playerScore;
-    levelTotalTime = 44000;
-    levelSet = true;
-    levelTwoStartScore = playerScore;
-  }
-  else if(!levelSet)
+  if(!levelSet)
   {
-    level = 1;
-    alienSpawnRate = 3500;
-    playerMoney = 1140000;
-    playerScore = 0;
-    levelTotalTime = 36000;
-    levelSet = true;
-    levelTwoStartScore = 0;
+    if(levels.length < 1)
+    {
+      levels.push(new Level(1, 4000, 28000, 0));
+      currentLevel = levels[levels.length - 1];
+      levelSet = true;
+    }
+    else if(currentLevel.playerMoney == 0)
+    {
+      levels = [];
+      levels.push(new Level(1, 4000, 28000, 0));
+      currentLevel = levels[levels.length - 1];
+      levelSet = true;
+    }
+    else
+    {
+      currentLevel = levels[levels.length - 1];
+      levelSet = true;
+    }
   }
 
   //score = 0;
@@ -2113,14 +2144,11 @@ function initialize() {
   gameloop();
 
   assetLoader.sounds.die.pause();
-  assetLoader.sounds.backGroundSound.currentTime = 0;
-  assetLoader.sounds.backGroundSound.loop = true;
-  assetLoader.sounds.backGroundSound.play();
 }
 
 function loseLife() {
   stop = true;
-  $('#score').html(playerMoney);
+  $('#score').html(currentLevel.playerMoney);
   $('#gOver').show();
   assetLoader.sounds.backGroundSound.pause();
   assetLoader.sounds.die.currentTime = 0;
